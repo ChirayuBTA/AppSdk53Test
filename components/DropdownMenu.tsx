@@ -63,14 +63,18 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
                   },
                 ]}
               >
-                {React.Children.map(children, (child) =>
-                  React.isValidElement(child)
-                    ? React.cloneElement(
-                        child as ReactElement<{ onClose: () => void }>,
-                        { onClose: handleClose }
-                      )
-                    : child
-                )}
+                {React.Children.map(children, (child) => {
+                  if (!React.isValidElement(child)) return child;
+
+                  if (child.type === React.Fragment) {
+                    return child;
+                  }
+
+                  return React.cloneElement(
+                    child as ReactElement<{ onClose: () => void }>,
+                    { onClose: handleClose }
+                  );
+                })}
               </View>
             </View>
           </TouchableWithoutFeedback>
