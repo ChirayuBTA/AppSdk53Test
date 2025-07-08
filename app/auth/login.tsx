@@ -24,7 +24,6 @@ const LoginScreen = () => {
   //Storage Data state
   const [token, setToken] = useState<string | null>(null);
   const [promoterId, setPromoterId] = useState<string | null>(null);
-  const [role, setRole] = useState<string | null>(null);
   const [activityLocId, setActivityLocId] = useState<string | null>(null);
   const [cityId, setCityId] = useState<string | null>(null);
   const [loginImageId, setLoginImageId] = useState<string | undefined>();
@@ -35,14 +34,12 @@ const LoginScreen = () => {
     try {
       const storedToken = await getAuthValue("token");
       const storedPromoterId = await getAuthValue("promoterId");
-      const storedRole = await getAuthValue("role");
       const storedCityId = await getAuthValue("cityId");
       const storedLoginImageId = await getAuthValue("loginImageId");
       const storedActivityLocId = await getLocValue("activityLocId");
 
       if (storedToken) setToken(storedToken);
       if (storedPromoterId) setPromoterId(storedPromoterId);
-      if (storedRole) setRole(storedRole);
       if (storedActivityLocId) setActivityLocId(storedActivityLocId);
       if (storedLoginImageId) setLoginImageId(storedLoginImageId);
       if (storedCityId) setCityId(storedCityId);
@@ -58,22 +55,17 @@ const LoginScreen = () => {
   }, []);
 
   useEffect(() => {
-    console.log("role (login)--", role);
-    if (role === "PROMOTER") {
-      if (token && promoterId && !activityLocId) {
-        router.replace("/auth/projectCode");
-      } else if (
-        token &&
-        promoterId &&
-        activityLocId &&
-        loginImageId === undefined
-      ) {
-        router.replace("/LoginImage");
-      } else if (token && promoterId && activityLocId && loginImageId) {
-        router.replace("/dashboard");
-      }
-    } else if (role === "ALLIANCE_MANAGER") {
-      router.replace("/(screens)/MainDashboard");
+    if (token && promoterId && !activityLocId) {
+      router.replace("/auth/projectCode");
+    } else if (
+      token &&
+      promoterId &&
+      activityLocId &&
+      loginImageId === undefined
+    ) {
+      router.replace("/LoginImage");
+    } else if (token && promoterId && activityLocId && loginImageId) {
+      router.replace("/dashboard");
     }
   }, [token, promoterId, activityLocId, loginImageId]);
 
@@ -103,7 +95,6 @@ const LoginScreen = () => {
     api
       .sendOTP({ phone: phoneNumber })
       .then((response) => {
-        console.log("verifyOTP response---", response);
         if (response.success) {
           router.replace({
             pathname: "/auth/otp",

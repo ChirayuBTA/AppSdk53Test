@@ -1,12 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  Image,
-  StyleSheet,
-} from "react-native";
+import React from "react";
+import { View, Text, TouchableOpacity, Alert, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
 import { LogOut } from "lucide-react-native";
@@ -15,251 +8,167 @@ import {
   clearLocData,
   getLocData,
   getAuthData,
-  getAuthValue,
 } from "@/utils/storage";
 import DropdownMenu from "./DropdownMenu";
 import { MenuTrigger } from "./MenuTrigger";
 import { MenuOption } from "./MenuOption";
 
-interface CustomHeaderProps {
+const CustomHeader = ({
+  isLocationScreen,
+  isLegalScreen,
+}: {
   isLocationScreen?: boolean;
   isLegalScreen?: boolean;
-  showOnlyLogout?: boolean;
-  showHome?: boolean;
-  className?: string;
-}
-
-const CustomHeader: React.FC<CustomHeaderProps> = ({
-  isLocationScreen = false,
-  isLegalScreen = false,
-  showOnlyLogout = false,
-  showHome = true,
-  className,
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const [userRole, setuserRole] = useState<string | null>(null);
+  const isProfileScreen = pathname === "/Profile";
 
-  const fetchStoredData = async () => {
-    const role = await getAuthValue("role");
-    console.log("role-", role);
-    setuserRole(role);
+  const handleResetSettings = async () => {
+    Alert.alert("Reset?", `Are you sure you want to reset your settings?`, [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes",
+        onPress: async () => {
+          await clearLocData();
+          router.replace("/location");
+        },
+      },
+    ]);
   };
 
-  useEffect(() => {
-    fetchStoredData();
-  }, []);
-
-  // Memoize computed values
-  const isProfileScreen = useMemo(() => pathname === "/Profile", [pathname]);
-
-  // Memoized handlers to prevent unnecessary re-renders
-  const handleResetSettings = useCallback(async () => {
-    Alert.alert(
-      "Reset Settings",
-      "Are you sure you want to reset your settings?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await clearLocData();
-              router.replace("/location");
-            } catch (error) {
-              console.error("Error clearing location data:", error);
-              Alert.alert(
-                "Error",
-                "Failed to reset settings. Please try again."
-              );
-            }
-          },
-        },
-      ]
-    );
-  }, [router]);
-
-  const handleUploadImages = useCallback(() => {
+  const handleUploadImages = () => {
     router.push("/uploadImages");
-  }, [router]);
+  };
 
-  const handleEnterVendorCode = useCallback(() => {
-    // TODO: Implement vendor code entry navigation
+  const handleEnterVendorCode = () => {
+    // Navigate to vendor code entry screen or show a modal
     console.log("Enter Vendor Code Clicked");
-    // router.push("/enterVendorCode");
-  }, []);
 
-  const handleLogout = useCallback(async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
+    // router.push("/enterVendorCode"); // Update this with the actual path
+  };
+
+  const handleLogout = async () => {
+    Alert.alert("Logout?", `Are you sure you want to logout?`, [
+      { text: "No", style: "cancel" },
       {
-        text: "Logout",
-        style: "destructive",
+        text: "Yes",
         onPress: async () => {
+          // await clearLocData();
+          // await clearAuthData();
+          // router.replace("/");
           router.push("/LogoutImage");
         },
       },
     ]);
-  }, [router]);
-
-  const handleOnlyLogout = useCallback(async () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          await clearLocData();
-          await clearAuthData();
-          router.replace("/");
-        },
-      },
-    ]);
-  }, [router]);
-
-  const handleHomePress = useCallback(() => {
-    router.replace("/dashboard");
-  }, [router]);
-
-  // Memoized menu trigger component
-  const menuTrigger = useCallback(
-    (onPress: () => void) => (
-      <MenuTrigger onPress={onPress}>
-        <Ionicons name="menu" size={28} color="black" />
-      </MenuTrigger>
-    ),
-    []
-  );
-
-  // Memoized menu options based on screen type
-  const menuOptions = useMemo(() => {
-    if (showOnlyLogout) {
-      return (
-        <>
-          <MenuOption
-            onSelect={handleOnlyLogout}
-            icon={<Ionicons name="log-out-outline" size={20} color="red" />}
-          >
-            Logout
-          </MenuOption>
-        </>
-      );
-    }
-
-    return (
-      <>
-        <MenuOption
-          onSelect={handleUploadImages}
-          icon={<Ionicons name="image" size={20} color="black" />}
-        >
-          Event Images Upload
-        </MenuOption>
-
-        <MenuOption
-          onSelect={handleLogout}
-          icon={<Ionicons name="log-out-outline" size={20} color="red" />}
-        >
-          Logout
-        </MenuOption>
-      </>
-    );
-  }, [
-    isProfileScreen,
-    handleEnterVendorCode,
-    handleUploadImages,
-    userRole,
-    handleLogout,
-  ]);
-
-  // Early return for legal screen
-  if (isLegalScreen) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/images/appLogo.png")}
-            style={styles.logo}
-          />
-        </View>
-      </View>
-    );
-  }
+  };
 
   return (
-    <View style={styles.container} className={`${className}`}>
+    <View
+      style={{
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        backgroundColor: "white",
+      }}
+    >
       {/* Logo */}
-      <View style={styles.logoContainer}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
         <Image
           source={require("@/assets/images/appLogo.png")}
-          style={styles.logo}
+          style={{ width: 80, height: 40, resizeMode: "contain" }}
         />
       </View>
 
-      {/* Actions */}
-      <View style={styles.actionsContainer}>
-        {showOnlyLogout ? (
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleOnlyLogout}
-            accessibilityLabel="Logout"
-            accessibilityRole="button"
-          >
-            <LogOut size={22} color="red" />
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.menuContainer}>
-            {showHome && (
-              <TouchableOpacity
-                style={styles.homeButton}
-                onPress={handleHomePress}
-                accessibilityLabel="Go to dashboard"
-                accessibilityRole="button"
-              >
-                <Ionicons name="home-outline" size={28} color="black" />
-              </TouchableOpacity>
-            )}
+      {!isLegalScreen && (
+        <View>
+          {isLocationScreen ? (
+            <TouchableOpacity style={{ padding: 8 }} onPress={handleLogout}>
+              <LogOut size={22} color="red" />
+            </TouchableOpacity>
+          ) : (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              {/* Show Home icon only if not on /Profile */}
+              {!isProfileScreen && (
+                <TouchableOpacity
+                  style={{ marginRight: 16 }}
+                  onPress={() => router.replace("/dashboard")}
+                >
+                  <Ionicons name="home-outline" size={28} color="black" />
+                </TouchableOpacity>
+              )}
 
-            <DropdownMenu trigger={menuTrigger}>{menuOptions}</DropdownMenu>
-          </View>
-        )}
-      </View>
+              {/* Dropdown Menu */}
+              <DropdownMenu
+                trigger={(onPress) => (
+                  <MenuTrigger onPress={onPress}>
+                    <Ionicons name="menu" size={28} color="black" />
+                  </MenuTrigger>
+                )}
+              >
+                {isProfileScreen ? (
+                  <>
+                    <MenuOption
+                      onSelect={handleEnterVendorCode}
+                      icon={
+                        <Ionicons name="key-outline" size={20} color="black" />
+                      }
+                    >
+                      Enter Vendor Code
+                    </MenuOption>
+
+                    <MenuOption
+                      onSelect={handleLogout}
+                      icon={
+                        <Ionicons
+                          name="log-out-outline"
+                          size={20}
+                          color="red"
+                        />
+                      }
+                    >
+                      Logout
+                    </MenuOption>
+                  </>
+                ) : (
+                  <>
+                    {/* <MenuOption
+                      onSelect={handleResetSettings}
+                      icon={<Ionicons name="refresh" size={20} color="black" />}
+                    >
+                      Reset Settings
+                    </MenuOption> */}
+
+                    <MenuOption
+                      onSelect={handleUploadImages}
+                      icon={<Ionicons name="image" size={20} color="black" />}
+                    >
+                      Event Images Upload
+                    </MenuOption>
+
+                    <MenuOption
+                      onSelect={handleLogout}
+                      icon={
+                        <Ionicons
+                          name="log-out-outline"
+                          size={20}
+                          color="red"
+                        />
+                      }
+                    >
+                      Logout
+                    </MenuOption>
+                  </>
+                )}
+              </DropdownMenu>
+            </View>
+          )}
+        </View>
+      )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: "white",
-  },
-  logoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  logo: {
-    width: 80,
-    height: 40,
-    resizeMode: "contain",
-  },
-  actionsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  iconButton: {
-    padding: 8,
-  },
-  menuContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  homeButton: {
-    marginRight: 16,
-  },
-});
-
-export default React.memo(CustomHeader);
+export default CustomHeader;

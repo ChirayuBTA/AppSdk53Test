@@ -76,6 +76,7 @@ const DashboardScreen = () => {
       const storedActivityLocName = await getLocValue("activityLocName");
       const storedCityId = await getAuthValue("cityId");
       const storedLoginImageId = await getAuthValue("loginImageId");
+      console.log("storedLoginImageId---", storedLoginImageId);
 
       if (storedPromoterId) setPromoterId(storedPromoterId);
       if (storedActivityLocName) setActivityLocName(storedActivityLocName);

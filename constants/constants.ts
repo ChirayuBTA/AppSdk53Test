@@ -7,4 +7,4 @@ const constants = {
   APP_SCHEME: "myapp",
 };
 
-module.exports = constants;
+export default constants;

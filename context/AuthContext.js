@@ -63,7 +63,6 @@ export const AuthProvider = ({ children }) => {
     brandId: authData?.brandId || null,
     vendorId: authData?.vendorId || null,
     token: authData?.token || null,
-    role: authData?.role || null,
     activityLocId: locData?.activityLocId || null,
     activityLocName: locData?.activityLocName || null,
     activityId: locData?.activityId || null,

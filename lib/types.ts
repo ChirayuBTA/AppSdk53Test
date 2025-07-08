@@ -9,9 +9,4 @@ interface IVerifyPromoBody {
   phone: string;
   promoCode: string;
   promoterId: string;
-  userId: string;
-}
-interface ICreateAreaBody {
-  name: string;
-  cityId: string;
 }

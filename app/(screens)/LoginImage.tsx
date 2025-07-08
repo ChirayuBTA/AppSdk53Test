@@ -7,7 +7,6 @@ import {
   Alert,
   ActivityIndicator,
   StatusBar,
-  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
@@ -22,8 +21,6 @@ import {
   storeAuthData,
 } from "@/utils/storage";
 import { formDataToObject } from "@/helper";
-import * as Device from "expo-device";
-import * as Application from "expo-application";
 
 const LoginImage = () => {
   const [image, setImage] = useState<string>("");
@@ -31,29 +28,8 @@ const LoginImage = () => {
   const [promoterId, setPromoterId] = useState("");
   const [activityCode, setActivityCode] = useState("");
   const [imageReady, setImageReady] = useState<boolean>(false); // Track if image is ready
-  const [deviceIdentifier, setDeviceIdentifier] = useState("");
 
   const router = useRouter();
-
-  // Get device identifier
-  const getDeviceIdentifier = async () => {
-    try {
-      let identifier = "";
-      if (Platform.OS === "android") {
-        identifier = (await Application.getAndroidId()) || "";
-      } else if (Platform.OS === "ios") {
-        identifier = (await Application.getIosIdForVendorAsync()) || "";
-      }
-      if (identifier) {
-        setDeviceIdentifier(identifier);
-        return identifier;
-      }
-      return "";
-    } catch (error) {
-      console.error("Error getting device identifier:", error);
-      return "";
-    }
-  };
 
   const fetchStoredData = async () => {
     const storedPromoterId = await getAuthValue("promoterId");
@@ -141,10 +117,6 @@ const LoginImage = () => {
       formData.append("image", imageFile as any);
       formData.append("promoterId", promoterId);
       formData.append("activityCode", activityCode);
-      if (Device.manufacturer && Device.modelName) {
-        const deviceInfo = `${Device.manufacturer}, ${Device.modelName} (${deviceIdentifier})`;
-        formData.append("deviceInfo", deviceInfo);
-      }
 
       formDataToObject(formData, "loginImage");
 
@@ -224,11 +196,7 @@ const LoginImage = () => {
   return (
     <SafeAreaView className="flex-1 bg-gray-100">
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      {/* <CustomHeader
-        showOnlyLogout={true}
-        showHome={false}
-        className="border-b border-gray-200"
-      /> */}
+
       {/* Main Card */}
       <View className="bg-white mx-4 my-4 rounded-3xl shadow-md p-6">
         <View className="mx-4 my-4 rounded-3xl p-6">

@@ -81,13 +81,12 @@ const OtpScreen = () => {
     api
       .verifyOTP({ phone, otp })
       .then(async (response) => {
-        console.log("verifyOTP response---", response);
         if (!response.success) {
           return Alert.alert("Error", response.message || "Invalid OTP");
         }
-        console.log("response---", response.user.logoutImageExists);
+        console.log("response---", response.promoter.logoutImageExists);
 
-        if (response.user.logoutImageExists == false) {
+        if (response.promoter.logoutImageExists == false) {
           Alert.alert(
             "Notice",
             "You missed uploading the logout image for your last activity. Please contact your supervisor."
@@ -95,27 +94,23 @@ const OtpScreen = () => {
         }
 
         const authData = {
-          // projectId: response.user.projectIds[0],
-          // brandId: response.user.brandIds[0],
-          userId: response.user.id,
-          promoterId: response?.user?.promoterId,
+          // projectId: response.promoter.projectIds[0],
+          // brandId: response.promoter.brandIds[0],
+          promoterId: response.promoter.id,
           promotorPhone: phone,
-          // vendorId: response.user.vendorId,
+          // vendorId: response.promoter.vendorId,
           token: response.token,
-          role: response.user.role,
-          // cityId: response.user.cityId,
+          // cityId: response.promoter.cityId,
         };
 
         const authStored = await storeAuthData(authData);
 
         console.log("Auth data stored successfully:", authStored, authData);
         // router.replace("/location");
-        response.user.role === "PROMOTER"
-          ? router.replace({
-              pathname: "/auth/projectCode",
-              params: { phoneNumber },
-            })
-          : router.replace({ pathname: "/(screens)/MainDashboard" });
+        router.replace({
+          pathname: "/auth/projectCode",
+          params: { phoneNumber },
+        });
       })
       .catch((error) => {
         if (error.name === "AppUpdateRequiredError") {
