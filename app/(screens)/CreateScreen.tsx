@@ -35,12 +35,12 @@ const PREVIEW_SIZE = width / 2 - 32; // Smaller for preview
 const CreateScreen = () => {
   const [name, setName] = useState<string>("");
   const [phone, setPhone] = useState<string>("");
-  const [entryType, setEntryType] = useState<string>(""); // Changed to string instead of array
-  const [images, setImages] = useState<string[]>([]); // Original images
+  const [entryType, setEntryType] = useState<string>("");
+  const [images, setImages] = useState<string[]>([]);
   const [imageDetails, setImageDetails] = useState<
     Array<{ width: number; height: number }>
   >([]);
-  const [processedImages, setProcessedImages] = useState<string[]>([]); // Images with watermark
+  const [processedImages, setProcessedImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [location, setLocation] = useState<{
     latitude: number;
@@ -62,11 +62,12 @@ const CreateScreen = () => {
     useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [deviceIdentifier, setDeviceIdentifier] = useState<string>("");
-
-  // Add new state to track image processing
   const [imagesReady, setImagesReady] = useState<boolean>(true);
 
   const viewShotRefs = useRef<Array<ViewShot | null>>([]);
+
+  // Add a ref to track if submission is in progress
+  const submissionInProgress = useRef(false);
 
   const [storageData, setStorageData] = useState<{
     activityId: string;
@@ -127,10 +128,8 @@ const CreateScreen = () => {
       let identifier = "";
 
       if (Platform.OS === "android") {
-        // Use Android ID as a fallback (not the IMEI, but a stable device ID)
         identifier = (await Application.getAndroidId()) || "";
       } else if (Platform.OS === "ios") {
-        // Use identifierForVendor on iOS (this is not IMEI)
         identifier = (await Application.getIosIdForVendorAsync()) || "";
       }
 
@@ -153,7 +152,6 @@ const CreateScreen = () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== "granted") {
-        // Alert.alert("Permission to access location was denied");
         return;
       }
 
@@ -171,10 +169,9 @@ const CreateScreen = () => {
       try {
         const url = `https://nominatim.openstreetmap.org/reverse?lat=${locationData.latitude}&lon=${locationData.longitude}&format=json`;
 
-        // Add a User-Agent header as required by Nominatim usage policy
         const response = await fetch(url, {
           headers: {
-            "User-Agent": "YourAppName/1.0", // Replace with your actual app name
+            "User-Agent": "YourAppName/1.0",
           },
         });
 
@@ -183,14 +180,12 @@ const CreateScreen = () => {
         }
 
         const osmData = await response.json();
-        console.log("OSM data:", osmData); // For debugging
+        console.log("OSM data:", osmData);
 
-        // Extract address information from OSM data
         const addressInfo = osmData.address || {};
 
         setLocation({
           ...locationData,
-          // Store detailed address components from OSM
           name: osmData.name || "",
           street: addressInfo.road || "",
           district: addressInfo.suburb || addressInfo.city_district || "",
@@ -201,7 +196,6 @@ const CreateScreen = () => {
           country: addressInfo.country || "",
           postalCode: addressInfo.postcode || "",
           formattedAddress: osmData.display_name || "",
-          // For convenience, keep area as a summary field
           area:
             addressInfo.suburb ||
             addressInfo.city_district ||
@@ -211,7 +205,7 @@ const CreateScreen = () => {
         });
       } catch (geoError) {
         console.error("Error in reverse geocoding:", geoError);
-        setLocation(locationData); // Fall back to just coordinates
+        setLocation(locationData);
       }
     } catch (error) {
       console.error("Error getting location:", error);
@@ -251,17 +245,13 @@ const CreateScreen = () => {
     });
   };
 
-  // IMPROVED: Compress images to reduce upload size and time
   const compressImage = async (uri: string): Promise<string> => {
     try {
       const manipResult = await manipulateAsync(
         uri,
-        [
-          // Resize image if it's too large
-          { resize: { width: 1200 } }, // Max width 1200px
-        ],
+        [{ resize: { width: 1200 } }],
         {
-          compress: 0.8, // 80% quality - good balance between size and quality
+          compress: 0.8,
           format: SaveFormat.JPEG,
         }
       );
@@ -272,7 +262,6 @@ const CreateScreen = () => {
     }
   };
 
-  // Get image dimensions for proper rendering
   const getImageDimensions = async (
     uri: string
   ): Promise<{ width: number; height: number }> => {
@@ -284,26 +273,21 @@ const CreateScreen = () => {
         },
         (error) => {
           console.warn("Failed to get image dimensions:", error);
-          // Default fallback dimensions if image size can't be determined
           resolve({ width: 1000, height: 1000 });
         }
       );
     });
   };
 
-  // Format location information with detailed address components from OSM
   const getLocationString = () => {
     if (!location) return "Getting location...";
 
-    // Use the formatted display_name from OSM if available
     if (location.formattedAddress) {
       return location.formattedAddress;
     }
 
-    // Create array of address components from most specific to most general
     const addressComponents = [];
 
-    // Add specific address components if available
     if (location.name) addressComponents.push(location.name);
     if (location.street) addressComponents.push(location.street);
     if (location.district) addressComponents.push(location.district);
@@ -320,52 +304,43 @@ const CreateScreen = () => {
     return formattedAddress;
   };
 
-  // Alternative processing function that adds watermarks directly
   const processImage = async (imageUri: string) => {
-    // Simply return the original image without processing
     return imageUri;
   };
 
-  // Process all images sequentially
   const processAllImages = async () => {
-    // Simply return the original images
     return images;
   };
 
-  // IMPROVED: Modified image processing with compression
   const processImages = async (newImages: string[]) => {
     setImagesReady(false);
     setIsProcessing(true);
 
     try {
-      // Compress images first
       const compressedImages = await Promise.all(
         newImages.map(async (uri) => {
           try {
             return await compressImage(uri);
           } catch (error) {
             console.warn("Failed to compress image:", uri, error);
-            return uri; // fallback to original
+            return uri;
           }
         })
       );
 
-      // Get dimensions for each compressed image
       const details = await Promise.all(
         compressedImages.map(async (uri) => {
           try {
             return await getImageDimensions(uri);
           } catch (error) {
             console.warn("Error getting dimensions for image:", uri, error);
-            return { width: 1000, height: 1000 }; // fallback
+            return { width: 1000, height: 1000 };
           }
         })
       );
 
-      // Update state with compressed images
       setImages((prev) => {
         const currentImages = [...prev];
-        // Replace the last added images with compressed versions
         const startIndex = currentImages.length - newImages.length;
         compressedImages.forEach((compressedUri, index) => {
           if (startIndex + index >= 0) {
@@ -375,13 +350,9 @@ const CreateScreen = () => {
         return currentImages;
       });
 
-      // Update state in a single batch
       setImageDetails((prev) => [...prev, ...details]);
-
-      // Update viewShotRefs array size
       viewShotRefs.current = Array(images.length + newImages.length).fill(null);
 
-      // Refresh location data and timestamp
       await getLocation();
       updateTimestamp();
     } catch (error) {
@@ -393,7 +364,6 @@ const CreateScreen = () => {
     }
   };
 
-  // Handle Image Selection from gallery
   const pickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
@@ -403,48 +373,37 @@ const CreateScreen = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       allowsEditing: false,
-      quality: 0.8, // Reduced quality for smaller file size
+      quality: 0.8,
       allowsMultipleSelection: true,
       selectionLimit: 3,
-      base64: false, // Don't use base64 encoding which can reduce quality
-      exif: false, // Don't need EXIF data
+      base64: false,
+      exif: false,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      // Check if adding these images would exceed our limit
       const totalImages = images.length + result.assets.length;
       if (totalImages > 3) {
         Alert.alert(
           "Too many images",
           "You can only have a maximum of 3 images."
         );
-        // Add as many as we can within the limit
         const remainingSlots = 3 - images.length;
         if (remainingSlots > 0) {
           const newImages = result.assets
             .slice(0, remainingSlots)
             .map((asset) => asset.uri);
 
-          // Update images state first
           setImages((prev) => [...prev, ...newImages]);
-
-          // Process images asynchronously
           await processImages(newImages);
         }
       } else {
-        // Add all selected images
         const newImages = result.assets.map((asset) => asset.uri);
-
-        // Update images state first
         setImages((prev) => [...prev, ...newImages]);
-
-        // Process images asynchronously
         await processImages(newImages);
       }
     }
   };
 
-  // Handle Taking a Picture with camera
   const takePhoto = async () => {
     if (images.length >= 3) {
       Alert.alert("Maximum Images", "You can only upload up to 3 images.");
@@ -459,32 +418,25 @@ const CreateScreen = () => {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: false,
-      quality: 0.8, // Reduced quality for smaller file size
-      base64: false, // Don't use base64 encoding
-      exif: false, // Don't need EXIF data
+      quality: 0.8,
+      base64: false,
+      exif: false,
     });
 
     if (!result.canceled && result.assets.length > 0) {
       const newImageUri = result.assets[0].uri;
-
-      // Update images state first
       setImages((prev) => [...prev, newImageUri]);
-
-      // Process the single image
       await processImages([newImageUri]);
     }
   };
 
-  // Remove image from collection
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImageDetails((prev) => prev.filter((_, i) => i !== index));
     setProcessedImages((prev) => prev.filter((_, i) => i !== index));
-    // Update viewShotRefs array size
     viewShotRefs.current = viewShotRefs.current.filter((_, i) => i !== index);
   };
 
-  // Add validation function
   const validateSubmission = () => {
     if (images.length === 0) {
       Alert.alert("Error", "Please upload at least one image.");
@@ -504,7 +456,6 @@ const CreateScreen = () => {
       return false;
     }
 
-    // Check if all required storage data is available
     const requiredFields = [
       "promoterId",
       "projectId",
@@ -529,14 +480,12 @@ const CreateScreen = () => {
     return true;
   };
 
-  // IMPROVED: Create timeout wrapper for API calls
   const createTimeoutPromise = (timeoutMs: number) => {
     return new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Request timeout")), timeoutMs)
     );
   };
 
-  // IMPROVED: Retry mechanism for failed requests
   const retryApiCall = async (
     apiCall: () => Promise<any>,
     maxRetries: number = 2,
@@ -549,38 +498,41 @@ const CreateScreen = () => {
         console.log(`API call attempt ${attempt} failed:`, error);
 
         if (attempt === maxRetries + 1) {
-          throw error; // Last attempt failed, throw the error
+          throw error;
         }
 
-        // Wait before retrying
         await new Promise((resolve) => setTimeout(resolve, delay * attempt));
       }
     }
   };
 
-  // IMPROVED: Handle Submit with better timeout handling and retry logic
+  // FIXED: Prevent multiple submissions
   const handleSubmit = async () => {
+    // Prevent multiple submissions
+    if (submissionInProgress.current) {
+      console.log("Submission already in progress, ignoring duplicate call");
+      return;
+    }
+
     if (!validateSubmission()) {
       return;
     }
 
+    submissionInProgress.current = true;
     setIsLoading(true);
 
     try {
-      // Add a small delay to ensure all state updates are complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      // Remove the artificial delay that might cause issues
+      // await new Promise((resolve) => setTimeout(resolve, 100));
 
-      // Use original images instead of watermarked ones
       const imagesToUpload = images;
-
       const formData = new FormData();
 
-      // IMPROVED: Add images with better error handling and compression info
+      // Add images to FormData
       for (let index = 0; index < imagesToUpload.length; index++) {
         const uri = imagesToUpload[index];
         if (uri && typeof uri === "string") {
           try {
-            // Get file info for better naming
             const fileInfo = await fetch(uri);
             const blob = await fileInfo.blob();
 
@@ -588,11 +540,10 @@ const CreateScreen = () => {
               uri,
               name: `photo_${Date.now()}_${index}.jpg`,
               type: "image/jpeg",
-              size: blob.size, // Include file size info
+              size: blob.size,
             } as any);
           } catch (imageError) {
             console.warn(`Error processing image ${index}:`, imageError);
-            // Fallback to original method
             formData.append("images", {
               uri,
               name: `photo_${Date.now()}_${index}.jpg`,
@@ -602,7 +553,7 @@ const CreateScreen = () => {
         }
       }
 
-      // Add the rest of the form data with validation
+      // Add form data
       const formDataEntries = {
         promoterId: storageData.promoterId,
         projectId: storageData.projectId,
@@ -621,15 +572,11 @@ const CreateScreen = () => {
 
       name && formData.append("name", name);
       phone && formData.append("phone", phone);
-
-      // Add entry type data to formData
       formData.append("entryType", entryType);
 
-      // Add location data to formData
       if (location) {
         formData.append("latitude", location.latitude.toString());
         formData.append("longitude", location.longitude.toString());
-
         const formattedAddress = getLocationString();
         formData.append("location", formattedAddress);
       }
@@ -641,17 +588,17 @@ const CreateScreen = () => {
 
       formDataToObject(formData, "createScreen");
 
-      // IMPROVED: Use retry mechanism with longer timeout
       console.log("Submitting form data...");
 
       const submitWithTimeout = async () => {
         return Promise.race([
           api.createOrderEntry(formData),
-          createTimeoutPromise(60000), // Increased to 60 seconds
+          createTimeoutPromise(60000),
         ]);
       };
 
-      const response = await retryApiCall(submitWithTimeout, 2, 2000);
+      // Reduce retries to avoid multiple calls
+      const response = await retryApiCall(submitWithTimeout, 0, 2000); // No retries
 
       if (response.success) {
         Alert.alert("Success", "Images uploaded successfully!");
@@ -688,23 +635,23 @@ const CreateScreen = () => {
       Alert.alert("Error", errorMessage);
     } finally {
       setIsLoading(false);
+      submissionInProgress.current = false; // Reset the flag
     }
   };
 
-  // Add this to handle location data when permission is granted
   const handleLocationGranted = (locationData: any) => {
     setLocationPermissionGranted(true);
     updateTimestamp();
   };
 
-  // Check if submit should be disabled
   const isSubmitDisabled = () => {
     return (
       isLoading ||
       images.length === 0 ||
       isProcessing ||
       entryType === "" ||
-      !imagesReady
+      !imagesReady ||
+      submissionInProgress.current // Add this check
     );
   };
 
