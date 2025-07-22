@@ -100,6 +100,8 @@ const MissingBankDetails = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { channelId, channelName } = params;
+  const paramManagerName = params.managerName as string;
+  const paramManagerPhone = params.managerPhone as string;
 
   // Get status bar height
   const statusBarHeight =
@@ -164,6 +166,9 @@ const MissingBankDetails = () => {
       params: {
         activityId: channelActivity.id,
         channelId: channelId,
+        activityFee: channelActivity.channelActivityFee,
+        managerName: paramManagerName,
+        managerPhone: paramManagerPhone,
         // channelName: channelName,
         // activityName: channelActivity.activity?.name || "Activity",
         // brandName: channelActivity.brand?.name || "",

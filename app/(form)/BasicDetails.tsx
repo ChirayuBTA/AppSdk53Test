@@ -19,9 +19,16 @@ import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { api } from "@/utils/api";
-import { getLocData, storeAuthData, storeLocData } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  getAuthData,
+  getLocData,
+  storeAuthData,
+  storeLocData,
+} from "@/utils/storage";
 import { formDataToObject } from "@/helper";
 import LocationSelector from "@/components/Address";
+import { EMAIL_REGEX, PHONE_REGEX, PAN_REGEX, GST_REGEX } from "@/utils/regex";
 
 interface UploadedFile {
   id: string;
@@ -80,6 +87,19 @@ interface LocationData {
   state: string;
 }
 
+interface ValidationErrors {
+  channelName?: string;
+  channelAddress?: string;
+  areaId?: string;
+  registrationNo?: string;
+  pan?: string;
+  gstin?: string;
+  managerName?: string;
+  managerContact?: string;
+  locationLink?: string;
+  kyc?: string;
+}
+
 const BasicDetails = () => {
   const router = useRouter();
   const [formData, setFormData] = useState({
@@ -94,6 +114,7 @@ const BasicDetails = () => {
     gstin: "",
     managerName: "",
     managerContact: "",
+    locationLink: "",
   });
 
   // Add location data state
@@ -105,14 +126,21 @@ const BasicDetails = () => {
     state: "",
   });
 
+  // Add validation errors state
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>(
+    {}
+  );
+
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [locationImages, setLocationImages] = useState<string[]>([]);
   const [showFileOptions, setShowFileOptions] = useState({
     registrationNo: false,
     pan: false,
     gstin: false,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [storedlocData, setStoredLocData] = useState<any>();
+  const [storedLocData, setStoredLocData] = useState<any>();
+  const [storedAuthData, setStoredAuthData] = useState<any>();
 
   const statusBarHeight =
     Platform.OS === "ios"
@@ -122,9 +150,12 @@ const BasicDetails = () => {
   const getStoredData = async () => {
     try {
       const locData = await getLocData();
+      const authData = await getAuthData();
       console.log("locData---", locData);
+      console.log("authData---", authData);
 
       if (locData) setStoredLocData(locData);
+      if (authData) setStoredAuthData(authData);
     } catch (err) {
       console.log("Error: ", err);
     }
@@ -134,11 +165,70 @@ const BasicDetails = () => {
     getStoredData();
   }, []);
 
-  const updateField = (field: any, value: any) => {
+  // Validation functions
+  const validateField = (field: string, value: string): string | null => {
+    switch (field) {
+      case "channelName":
+        return value.trim() === "" ? "Channel name is required" : null;
+
+      case "managerName":
+        return value.trim() === "" ? "Manager name is required" : null;
+
+      case "managerContact":
+        if (value.trim() === "") return "Manager contact is required";
+        if (!PHONE_REGEX.test(value.trim()))
+          return "Invalid phone number format (10 digits required)";
+        return null;
+
+      case "locationLink":
+        if (value.trim() !== "") {
+          const urlRegex =
+            /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+          if (!urlRegex.test(value.trim())) {
+            return "Please enter a valid URL";
+          }
+        }
+        return null;
+
+      case "pan":
+        if (value.trim() !== "" && !PAN_REGEX.test(value.trim())) {
+          return "Invalid PAN format (e.g., ABCDE1234F)";
+        }
+        return null;
+
+      case "gstin":
+        if (value.trim() !== "" && !GST_REGEX.test(value.trim())) {
+          return "Invalid GSTIN format";
+        }
+        return null;
+
+      default:
+        return null;
+    }
+  };
+
+  const updateField = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+
+    // Clear validation error when user starts typing
+    if (validationErrors[field as keyof ValidationErrors]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+      }));
+    }
+
+    // Real-time validation for specific fields
+    const error = validateField(field, value);
+    if (error) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [field]: error,
+      }));
+    }
   };
 
   // Handle location data changes
@@ -199,6 +289,45 @@ const BasicDetails = () => {
     return true;
   };
 
+  // Handle selecting images from gallery for location
+  const pickLocationImagesFromGallery = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      allowsMultipleSelection: true,
+      allowsEditing: false,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const newImages = result.assets.map((asset) => asset.uri);
+      setLocationImages((prevImages) => [...prevImages, ...newImages]);
+    }
+  };
+
+  // Handle taking photo for location
+  const takeLocationPhoto = async () => {
+    const hasPermission = await requestPermissions();
+    if (!hasPermission) return;
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: false,
+      quality: 0.7,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setLocationImages((prevImages) => [...prevImages, result.assets[0].uri]);
+    }
+  };
+
+  // Remove location image
+  const removeLocationImage = (uri: string) => {
+    setLocationImages((prevImages) =>
+      prevImages.filter((image) => image !== uri)
+    );
+  };
+
   // Toggle file options for specific KYC field
   const toggleFileOptions = (kycType: string) => {
     setShowFileOptions((prev) => ({
@@ -214,7 +343,7 @@ const BasicDetails = () => {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -241,7 +370,7 @@ const BasicDetails = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -303,6 +432,71 @@ const BasicDetails = () => {
   // Get files for specific KYC type
   const getFilesForKYC = (kycType: string) => {
     return uploadedFiles.filter((file) => file.kycType === kycType);
+  };
+
+  // Comprehensive form validation
+  const validateForm = (): boolean => {
+    const errors: ValidationErrors = {};
+
+    // Required field validations
+    if (!formData.channelTypeId)
+      errors.channelName = "Channel type is required";
+    if (!formData.channelName.trim())
+      errors.channelName = "Channel name is required";
+    if (!locationData.address.trim())
+      errors.channelAddress = "Channel address is required";
+    if (!formData.areaId) errors.areaId = "Area selection is required";
+    if (!formData.managerName.trim())
+      errors.managerName = "Manager name is required";
+    if (!formData.managerContact.trim())
+      errors.managerContact = "Manager contact is required";
+
+    // Regex validations
+    if (
+      formData.managerContact.trim() &&
+      !PHONE_REGEX.test(formData.managerContact.trim())
+    ) {
+      errors.managerContact =
+        "Invalid phone number format (10 digits required)";
+    }
+
+    if (formData.pan.trim() && !PAN_REGEX.test(formData.pan.trim())) {
+      errors.pan = "Invalid PAN format (e.g., ABCDE1234F)";
+    }
+
+    if (formData.gstin.trim() && !GST_REGEX.test(formData.gstin.trim())) {
+      errors.gstin = "Invalid GSTIN format";
+    }
+
+    // Location link validation
+    if (formData.locationLink.trim()) {
+      const urlRegex =
+        /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+      if (!urlRegex.test(formData.locationLink.trim())) {
+        errors.locationLink = "Please enter a valid URL";
+      }
+    }
+
+    // KYC validation
+    if (!validateKYC()) {
+      errors.kyc =
+        "At least one KYC document (Registration No, PAN, or GSTIN) is required";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Render validation error
+  const renderValidationError = (fieldName: keyof ValidationErrors) => {
+    if (validationErrors[fieldName]) {
+      return (
+        <Text className="text-red-500 text-xs mt-1">
+          {validationErrors[fieldName]}
+        </Text>
+      );
+    }
+    return null;
   };
 
   // Render file upload section for KYC field
@@ -408,78 +602,159 @@ const BasicDetails = () => {
     );
   };
 
+  // Render location photo upload section
+  const renderLocationPhotoUpload = () => {
+    return (
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 mb-2">
+          Location Photos (Optional)
+        </Text>
+        <Text className="text-xs text-gray-600 mb-3">
+          Upload photos of the location to help identify the place
+        </Text>
+
+        {/* Photo Upload Buttons */}
+        <View className="flex-row gap-4 mb-4">
+          <TouchableOpacity
+            onPress={pickLocationImagesFromGallery}
+            className="flex-1 items-center justify-center bg-white border border-gray-300 rounded-xl p-4 shadow-sm"
+          >
+            <Ionicons name="image" size={24} color="#f89f22" />
+            <Text className="text-sm text-gray-600 mt-2">Select Photos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={takeLocationPhoto}
+            className="flex-1 items-center justify-center bg-white border border-gray-300 rounded-xl p-4 shadow-sm"
+          >
+            <Ionicons name="camera" size={24} color="#f89f22" />
+            <Text className="text-sm text-gray-600 mt-2">Take Photo</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Preview Images */}
+        {locationImages.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="mb-4"
+          >
+            {locationImages.map((uri, index) => (
+              <View key={index} className="relative mr-4">
+                <Image
+                  source={{ uri }}
+                  className="w-20 h-20 rounded-lg border border-gray-300"
+                  resizeMode="cover"
+                />
+                <TouchableOpacity
+                  onPress={() => removeLocationImage(uri)}
+                  className="absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center"
+                >
+                  <Ionicons name="close" size={16} color="white" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </ScrollView>
+        )}
+
+        {locationImages.length > 0 && (
+          <Text className="text-xs text-gray-600 mb-2">
+            {locationImages.length} photo(s) selected
+          </Text>
+        )}
+      </View>
+    );
+  };
+
   const handleSubmit = async () => {
+    if (!validateForm()) {
+      Alert.alert(
+        "Validation Error",
+        "Please fix the errors before submitting."
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const formDataToSend = new FormData();
+
+    // Append form fields
+    formDataToSend.append("channelType", formData.channelTypeId);
+    formDataToSend.append("channelName", formData.channelName);
+    formDataToSend.append("channelAddress", locationData.address);
+    formDataToSend.append("areaId", formData.areaId);
+    formDataToSend.append("registrationNo", formData.registrationNo);
+    formDataToSend.append("pan", formData.pan);
+    formDataToSend.append("gstin", formData.gstin);
+    formDataToSend.append("managerName", formData.managerName);
+    formDataToSend.append("managerContact", formData.managerContact);
+    formDataToSend.append("locationLink", formData.locationLink);
+
+    // Append User ID
+    formDataToSend.append("userId", storedAuthData.userId);
+
+    // Append location data
+    formDataToSend.append("cityName", locationData.cityName);
+    formDataToSend.append("pincode", locationData.pincode);
+    formDataToSend.append("state", locationData.state);
+
+    // Append uploaded KYC files
+    uploadedFiles.forEach((file) => {
+      const fileObj = {
+        uri: file.uri,
+        type: file.type === "image" ? "image/jpeg" : "application/pdf",
+        name: file.name,
+      } as any;
+
+      formDataToSend.append(`files_${file.kycType}`, fileObj);
+    });
+
+    // Append location photos
+    locationImages.forEach((uri, index) => {
+      const fileObj = {
+        uri,
+        type: "image/jpeg",
+        name: `location_photo_${Date.now()}_${index}.jpg`,
+      } as any;
+
+      formDataToSend.append("location_photos", fileObj);
+    });
+
     try {
-      setIsSubmitting(true);
-
-      // Create FormData object
-      const formDataToSend = new FormData();
-
-      // Append form fields
-      formDataToSend.append("channelType", formData.channelTypeId);
-      formDataToSend.append("channelName", formData.channelName);
-      formDataToSend.append("channelAddress", locationData.address);
-      formDataToSend.append("areaId", formData.areaId);
-      formDataToSend.append("registrationNo", formData.registrationNo);
-      formDataToSend.append("pan", formData.pan);
-      formDataToSend.append("gstin", formData.gstin);
-      formDataToSend.append("managerName", formData.managerName);
-      formDataToSend.append("managerContact", formData.managerContact);
-
-      // Append location data
-      formDataToSend.append("cityId", locationData.cityId);
-      formDataToSend.append("pincode", locationData.pincode);
-      formDataToSend.append("state", locationData.state);
-
-      // Append uploaded files
-      uploadedFiles.forEach((file, index) => {
-        const fileObj = {
-          uri: file.uri,
-          type: file.type === "image" ? "image/jpeg" : "application/pdf",
-          name: file.name,
-        } as any;
-
-        formDataToSend.append(`files_${file.kycType}`, fileObj);
-      });
-
-      // Call the API
       const response = await api.createChannel(formDataToSend);
 
-      formDataToObject(formDataToSend, "BasicDetails");
+      if (response?.success) {
+        formDataToObject(formDataToSend, "BasicDetails");
 
-      if (response && response.success) {
         Alert.alert(
           "Channel Registered",
-          `Channel registered successfully! ${uploadedFiles.length} file(s) uploaded.\n\nDo you want to add an activity now?`,
+          `Channel registered successfully! ${uploadedFiles.length} KYC file(s) and ${locationImages.length} location photo(s) uploaded.\n\nDo you want to add an activity now?`,
           [
             {
               text: "Later",
-              onPress: () => {
-                router.push("/(screens)/MainDashboard");
-              },
+              onPress: () => router.push("/(screens)/MainDashboard"),
               style: "cancel",
             },
             {
               text: "Add Activity",
-              onPress: () => {
+              onPress: () =>
                 router.push({
                   pathname: "/(form)/ActivityDetails",
                   params: {
+                    managerName: formData.managerName,
+                    managerPhone: formData.managerContact,
                     channelId: response.data.id,
                     channelName: formData.channelName,
                   },
-                });
-              },
+                }),
             },
           ]
         );
       } else {
-        Alert.alert(
-          "Error",
-          response?.message || "Failed to register channel. Please try again."
-        );
+        Alert.alert("Error", response?.message || "Channel creation failed.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting form:", error);
       Alert.alert(
         "Error",
@@ -529,8 +804,13 @@ const BasicDetails = () => {
               value={formData.channelName}
               onChangeText={(value) => updateField("channelName", value)}
               placeholder="Enter legal name"
-              className="border border-gray-300 rounded-lg p-3 bg-white"
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.channelName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
+            {renderValidationError("channelName")}
           </View>
 
           {/* Location Selector Component */}
@@ -546,22 +826,39 @@ const BasicDetails = () => {
               addressPlaceholder="Enter address where activity will be conducted"
               showLabels={true}
             />
+            {renderValidationError("channelAddress")}
           </View>
 
-          {/* Area Selection Dropdown with Add Area Button */}
+          {/* Location Link Field */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Location Link (Optional)
+            </Text>
+            <Text className="text-xs text-gray-600 mb-2">
+              Google Maps link, website URL, or any other location reference
+            </Text>
+            <TextInput
+              value={formData.locationLink}
+              onChangeText={(value) => updateField("locationLink", value)}
+              placeholder="https://maps.google.com/... or any location URL"
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.locationLink
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {renderValidationError("locationLink")}
+          </View>
+
+          {/* Location Photo Upload Section */}
+          {renderLocationPhotoUpload()}
+
+          {/* Area Selection Dropdown */}
           <View className="mb-4">
             <View className="flex-row items-center justify-between">
               <Text className="text-sm font-medium text-gray-700">
                 Area <Text className="text-red-500">*</Text>
               </Text>
-              <TouchableOpacity
-                onPress={handleAddArea}
-                className="bg-primary px-3 py-1 rounded-md"
-              >
-                <Text className="text-white text-xs font-medium">
-                  + Add Area
-                </Text>
-              </TouchableOpacity>
             </View>
 
             <DynamicDropdown
@@ -578,6 +875,7 @@ const BasicDetails = () => {
               errorMessage="Failed to load areas. Please try again."
               maxHeight={320}
             />
+            {renderValidationError("areaId")}
           </View>
 
           {/* KYC Section */}
@@ -588,6 +886,7 @@ const BasicDetails = () => {
                 * (At least one field mandatory)
               </Text>
             </Text>
+            {renderValidationError("kyc")}
 
             {/* Registration Number */}
             <View className="mb-3">
@@ -598,8 +897,13 @@ const BasicDetails = () => {
                 value={formData.registrationNo}
                 onChangeText={(value) => updateField("registrationNo", value)}
                 placeholder="Enter legal entity registration number"
-                className="border border-gray-300 rounded-lg p-3 bg-white"
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.registrationNo
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
+              {renderValidationError("registrationNo")}
               {renderKYCFileUpload(
                 "registrationNo",
                 formData.registrationNo,
@@ -615,10 +919,13 @@ const BasicDetails = () => {
                 onChangeText={(value) =>
                   updateField("pan", value.toUpperCase())
                 }
-                placeholder="Enter PAN number"
+                placeholder="Enter PAN number (e.g., ABCDE1234F)"
                 maxLength={10}
-                className="border border-gray-300 rounded-lg p-3 bg-white"
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.pan ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {renderValidationError("pan")}
               {renderKYCFileUpload("pan", formData.pan, "PAN")}
             </View>
 
@@ -630,10 +937,13 @@ const BasicDetails = () => {
                 onChangeText={(value) =>
                   updateField("gstin", value.toUpperCase())
                 }
-                placeholder="Enter GSTIN number"
+                placeholder="Enter GSTIN number (15 characters)"
                 maxLength={15}
-                className="border border-gray-300 rounded-lg p-3 bg-white"
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.gstin ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {renderValidationError("gstin")}
               {renderKYCFileUpload("gstin", formData.gstin, "GSTIN")}
             </View>
           </View>
@@ -647,8 +957,13 @@ const BasicDetails = () => {
               value={formData.managerName}
               onChangeText={(value) => updateField("managerName", value)}
               placeholder="Person in charge of decision"
-              className="border border-gray-300 rounded-lg p-3 bg-white"
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.managerName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
+            {renderValidationError("managerName")}
           </View>
 
           {/* Manager Contact */}
@@ -659,11 +974,16 @@ const BasicDetails = () => {
             <TextInput
               value={formData.managerContact}
               onChangeText={(value) => updateField("managerContact", value)}
-              placeholder="Enter manager contact number"
+              placeholder="Enter 10-digit contact number"
               keyboardType="phone-pad"
-              maxLength={15}
-              className="border border-gray-300 rounded-lg p-3 bg-white"
+              maxLength={10}
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.managerContact
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
+            {renderValidationError("managerContact")}
           </View>
 
           {/* Submit Button */}

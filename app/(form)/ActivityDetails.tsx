@@ -20,8 +20,9 @@ import * as ImagePicker from "expo-image-picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { api } from "@/utils/api";
-import { getLocData, storeLocData } from "@/utils/storage";
 import { formDataToObject } from "@/helper";
+import { getAuthData } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
 
 interface UploadedFile {
   id: string;
@@ -44,10 +45,24 @@ const createDateWithTime = (hours: number, minutes: number = 0): Date => {
   return date;
 };
 
-// Helper function to get T+2 date (2 days from today)
+// Helper function to get T+2 date (2 days from today), but skip weekends
 const getTPlus2Date = (): Date => {
+  const today = new Date();
+  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+
+  let daysToAdd = 2; // Default T+2
+
+  // If today is Friday (5) or Saturday (6), calculate days to next Tuesday
+  if (currentDay === 5) {
+    // Friday
+    daysToAdd = 4; // Friday + 4 days = Tuesday
+  } else if (currentDay === 6) {
+    // Saturday
+    daysToAdd = 3; // Saturday + 3 days = Tuesday
+  }
+
   const date = new Date();
-  date.setDate(date.getDate() + 2);
+  date.setDate(date.getDate() + daysToAdd);
   return date;
 };
 
@@ -57,6 +72,8 @@ const ActivityDetails = () => {
   // Extract parameters
   const paramChannelId = params.channelId as string;
   const paramChannelName = params.channelName as string;
+  const paramManagerName = params.managerName as string;
+  const paramManagerPhone = params.managerPhone as string;
 
   const [formData, setFormData] = useState({
     brandId: "",
@@ -67,10 +84,14 @@ const ActivityDetails = () => {
     activityTypeName: "",
     pocName: "",
     pocContact: "",
-    activityDate: getTPlus2Date(), // Set default to T+2
-    timeFrom: createDateWithTime(11), // 11:00 AM
-    timeTo: createDateWithTime(18), // 6:00 PM (18:00 in 24-hour format)
+    activityDate: getTPlus2Date(),
+    timeFrom: createDateWithTime(11),
+    timeTo: createDateWithTime(18),
     channelFees: "",
+    isTaxable: false,
+    baseAmount: 0,
+    taxAmount: 0,
+    totalAmount: 0,
   });
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -82,26 +103,38 @@ const ActivityDetails = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   // const [channelId, setChannelId] = useState<string | null>(null);
+  const [storedAuthData, setStoredAuthData] = useState<any>(null);
 
   const statusBarHeight =
     Platform.OS === "ios"
       ? Constants.statusBarHeight
       : StatusBar.currentHeight || 24;
 
-  // const getStoredData = async () => {
-  //   try {
-  //     const LocData = await getLocData();
+  const getStoredData = async () => {
+    try {
+      // const LocData = await getLocData();
+      const authData = await getAuthData();
 
-  //     if (LocData) setChannelId(LocData.channelId);
-  //   } catch (err) {
-  //     // setError("Failed to fetch data from storage.");
-  //     console.log("Error: ", err);
-  //   }
-  // };
+      // if (LocData) setChannelId(LocData.channelId);
+      if (authData) setStoredAuthData(authData);
+    } catch (err) {
+      // setError("Failed to fetch data from storage.");
+      console.log("Error: ", err);
+    }
+  };
 
-  // useEffect(() => {
-  //   getStoredData(); // Get stored values on mount
-  // }, []);
+  useEffect(() => {
+    getStoredData(); // Get stored values on mount
+  }, []);
+
+  // useEffect to update formData once on component mount
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      pocName: paramManagerName,
+      pocContact: paramManagerPhone,
+    }));
+  }, [paramManagerName, paramManagerPhone]);
 
   const updateField = (field: any, value: any) => {
     setFormData((prev) => ({
@@ -191,6 +224,43 @@ const ActivityDetails = () => {
     }
   };
 
+  const calculateTaxAmounts = (baseAmount: number, isTaxable: boolean) => {
+    const taxAmount = isTaxable ? (baseAmount * 18) / 100 : 0;
+    const totalAmount = baseAmount + taxAmount;
+    return { taxAmount, totalAmount };
+  };
+
+  const handleChannelFeesChange = (value: string) => {
+    const numericValue = parseFloat(value) || 0;
+    const { taxAmount, totalAmount } = calculateTaxAmounts(
+      numericValue,
+      formData.isTaxable
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      channelFees: value,
+      baseAmount: numericValue,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+    }));
+  };
+
+  const handleTaxableChange = (isTaxable: boolean) => {
+    const baseAmount = parseFloat(formData.channelFees) || 0;
+    const { taxAmount, totalAmount } = calculateTaxAmounts(
+      baseAmount,
+      isTaxable
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      isTaxable: isTaxable,
+      taxAmount: taxAmount,
+      totalAmount: totalAmount,
+    }));
+  };
+
   // Request permissions for camera and media library
   const requestPermissions = async () => {
     const { status: cameraStatus } =
@@ -215,7 +285,7 @@ const ActivityDetails = () => {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -241,7 +311,7 @@ const ActivityDetails = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -298,101 +368,109 @@ const ActivityDetails = () => {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const handleSubmit = async () => {
-    try {
-      setIsSubmitting(true);
+  const handleSubmit = () => {
+    setIsSubmitting(true);
 
-      // Validation
-      if (
-        !formData.brandId ||
-        !formData.projectId ||
-        !formData.activityTypeId
-      ) {
-        Alert.alert("Error", "Please fill in all required fields");
-        return;
-      }
+    // Validation
+    if (!formData.brandId || !formData.projectId || !formData.activityTypeId) {
+      Alert.alert("Error", "Please fill in all required fields");
+      setIsSubmitting(false);
+      return;
+    }
 
-      if (!formData.channelFees) {
-        Alert.alert("Error", "Please enter channel fees");
-        return;
-      }
+    if (!formData.pocName) {
+      Alert.alert("Error", "Please enter POC Name");
+      setIsSubmitting(false);
+      return;
+    }
 
-      // Create FormData object
-      const formDataToSend = new FormData();
+    if (!formData.pocContact) {
+      Alert.alert("Error", "Please enter POC Contact number");
+      setIsSubmitting(false);
+      return;
+    }
 
-      // Append form fields
-      if (paramChannelId) {
-        formDataToSend.append("channelId", paramChannelId);
-      }
-      formDataToSend.append("brandId", formData.brandId);
-      formDataToSend.append("projectId", formData.projectId);
-      formDataToSend.append("activityTypeId", formData.activityTypeId);
-      formDataToSend.append(
-        "activityDate",
-        formData.activityDate.toISOString()
-      );
-      formDataToSend.append("pocName", formData.pocName);
-      formDataToSend.append("pocContact", formData.pocContact);
-      formDataToSend.append("timeFrom", formData.timeFrom.toISOString());
-      formDataToSend.append("timeTo", formData.timeTo.toISOString());
-      formDataToSend.append("channelFees", formData.channelFees);
+    if (!formData.channelFees || parseFloat(formData.channelFees) <= 0) {
+      Alert.alert("Error", "Please enter a valid channel fees amount");
+      setIsSubmitting(false);
+      return;
+    }
 
-      // Append uploaded files
-      uploadedFiles.forEach((file, index) => {
-        const fileObj = {
-          uri: file.uri,
-          type: file.type === "image" ? "image/jpeg" : "application/pdf",
-          name: file.name,
-        } as any;
+    // Create FormData object
+    const formDataToSend = new FormData();
 
-        formDataToSend.append(`files`, fileObj);
-      });
+    // Append form fields
+    if (paramChannelId) {
+      formDataToSend.append("channelId", paramChannelId);
+    }
+    formDataToSend.append("brandId", formData.brandId);
+    formDataToSend.append("projectId", formData.projectId);
+    formDataToSend.append("activityTypeId", formData.activityTypeId);
+    formDataToSend.append("activityDate", formData.activityDate.toISOString());
+    formDataToSend.append("pocName", formData.pocName);
+    formDataToSend.append("pocContact", formData.pocContact);
+    formDataToSend.append("timeFrom", formData.timeFrom.toISOString());
+    formDataToSend.append("timeTo", formData.timeTo.toISOString());
+    formDataToSend.append("channelFees", formData.baseAmount.toString());
+    formDataToSend.append("isTaxable", formData.isTaxable.toString());
+    // formDataToSend.append("baseAmount", formData.baseAmount.toString());
+    formDataToSend.append("gstAmount", formData.taxAmount.toString());
+    formDataToSend.append("totalAmount", formData.totalAmount.toString());
+    // Append User ID
+    formDataToSend.append("userId", storedAuthData.userId);
 
-      formDataToObject(formDataToSend, "ActivityDetails");
-      // Call the API
-      const response = await api.createChannelActivity(formDataToSend);
+    // Append uploaded files
+    uploadedFiles.forEach((file, index) => {
+      const fileObj = {
+        uri: file.uri,
+        type: file.type === "image" ? "image/jpeg" : "application/pdf",
+        name: file.name,
+      } as any;
 
-      formDataToObject(formDataToSend, "ActivityDetails");
+      formDataToSend.append(`files`, fileObj);
+    });
 
-      if (response && response.success) {
-        // const locData = {
-        //   channelId: paramChannelId,
-        //   activityId: response.data.id,
-        //   // channelName: storedlocData.channelName,
-        //   // activityCode: storedlocData.activityCode,
-        // };
+    formDataToObject(formDataToSend, "ActivityDetails");
 
-        // const locStored = await storeLocData(locData);
+    api
+      .createChannelActivity(formDataToSend)
+      .then((response) => {
+        formDataToObject(formDataToSend, "ActivityDetails");
 
-        // console.log("Loc data stored successfully:", locStored, locData);
-        Alert.alert(
-          "Success",
-          `Activity details saved successfully! ${uploadedFiles.length} file(s) uploaded.`
-        );
-        router.push({
-          pathname: "/(form)/BankDetails",
-          params: {
-            channelId: paramChannelId,
-            channelName: paramChannelName,
-            activityId: response.data.id,
-          },
-        });
-      } else {
+        if (response && response.success) {
+          Alert.alert(
+            "Success",
+            `Activity details saved successfully! ${uploadedFiles.length} file(s) uploaded.`
+          );
+          router.push({
+            pathname: "/(form)/BankDetails",
+            params: {
+              channelId: paramChannelId,
+              channelName: paramChannelName,
+              activityId: response.data.id,
+              activityFee: formData.channelFees,
+              managerName: paramManagerName,
+              managerPhone: paramManagerPhone,
+            },
+          });
+        } else {
+          Alert.alert(
+            "Error",
+            response?.message ||
+              "Failed to add activity details. Please try again."
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting activity details:", error);
         Alert.alert(
           "Error",
-          response?.message ||
-            "Failed to add activity details. Please try again."
+          "Failed to save activity details. Please check your connection and try again."
         );
-      }
-    } catch (error) {
-      console.error("Error submitting activity details:", error);
-      Alert.alert(
-        "Error",
-        "Failed to save activity details. Please check your connection and try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   return (
@@ -479,9 +557,9 @@ const ActivityDetails = () => {
             <TextInput
               value={formData.pocContact}
               onChangeText={(value) => updateField("pocContact", value)}
-              placeholder="Enter contact number"
+              placeholder="Enter 10-digit contact number"
               keyboardType="phone-pad"
-              maxLength={15}
+              maxLength={10}
               className="border border-gray-300 rounded-lg p-3 bg-white"
             />
           </View>
@@ -579,11 +657,58 @@ const ActivityDetails = () => {
             </Text>
             <TextInput
               value={formData.channelFees}
-              onChangeText={(value) => updateField("channelFees", value)}
+              onChangeText={handleChannelFeesChange}
               placeholder="Enter amount"
               keyboardType="numeric"
               className="border border-gray-300 rounded-lg p-3 bg-white"
             />
+
+            {/* Taxable Checkbox */}
+            <TouchableOpacity
+              onPress={() => handleTaxableChange(!formData.isTaxable)}
+              className="flex-row items-center mt-3 mb-2"
+            >
+              <View
+                className={`w-5 h-5 border-2 rounded mr-3 items-center justify-center ${
+                  formData.isTaxable
+                    ? "bg-primary border-primary"
+                    : "border-gray-300"
+                }`}
+              >
+                {formData.isTaxable && (
+                  <Ionicons name="checkmark" size={12} color="white" />
+                )}
+              </View>
+              <Text className="text-gray-700 text-sm">
+                Amount is taxable (18% GST)
+              </Text>
+            </TouchableOpacity>
+
+            {/* Tax Breakdown */}
+            {formData.isTaxable && parseFloat(formData.channelFees) > 0 && (
+              <View className="bg-gray-50 p-3 rounded-lg mt-2">
+                <View className="flex-row justify-between mb-1">
+                  <Text className="text-sm text-gray-600">Base Amount:</Text>
+                  <Text className="text-sm font-medium text-gray-900">
+                    ₹{formData.baseAmount.toFixed(2)}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between mb-1">
+                  <Text className="text-sm text-gray-600">Tax (18%):</Text>
+                  <Text className="text-sm font-medium text-gray-900">
+                    ₹{formData.taxAmount.toFixed(2)}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between border-t border-gray-200 pt-1">
+                  <Text className="text-sm font-semibold text-gray-900">
+                    Total Amount:
+                  </Text>
+                  <Text className="text-sm font-semibold text-primary">
+                    ₹{formData.totalAmount.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* File Upload Section */}

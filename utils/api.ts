@@ -6,6 +6,15 @@ import {
   imageHeaders,
 } from "@/helper/request-headers";
 import { apiUrl } from "@/lib/apiConfig";
+import {
+  ICreateAreaBody,
+  ISendManagerOTPRequestBody,
+  ISendOTPRequestBody,
+  ISendResendSignoffLinkBody,
+  IVerifyManagerOTPRequestBody,
+  IVerifyOTPRequestBody,
+  IVerifyPromoBody,
+} from "@/lib/types";
 
 export const api = {
   sendOTP: async function (body: ISendOTPRequestBody) {
@@ -158,10 +167,13 @@ export const api = {
   },
   getAllChannelTypes: async function (query: any) {
     const headers = await authHeaders();
-    return fetch(`${apiUrl}/app/getAllChannelType?${queryString(query)}`, {
-      headers: headers,
-      cache: "no-store",
-    }).then(handleResponse);
+    return fetch(
+      `${apiUrl}/channelApp/getAllChannelType?${queryString(query)}`,
+      {
+        headers: headers,
+        cache: "no-store",
+      }
+    ).then(handleResponse);
   },
   createChannel: async function (body: FormData) {
     const headers = await formHeaders();
@@ -171,7 +183,7 @@ export const api = {
       credentials: "include" as RequestCredentials,
       headers,
     };
-    return fetch(`${apiUrl}/app/createChannel`, reqOptions).then(
+    return fetch(`${apiUrl}/channelApp/createChannel`, reqOptions).then(
       handleResponse
     );
   },
@@ -183,7 +195,7 @@ export const api = {
       credentials: "include" as RequestCredentials,
       headers,
     };
-    return fetch(`${apiUrl}/app/createChannelActivity`, reqOptions).then(
+    return fetch(`${apiUrl}/channelApp/createChannelActivity`, reqOptions).then(
       handleResponse
     );
   },
@@ -195,7 +207,7 @@ export const api = {
       credentials: "include" as RequestCredentials,
       headers,
     };
-    return fetch(`${apiUrl}/app/addBankDetails`, reqOptions).then(
+    return fetch(`${apiUrl}/channelApp/addBankDetails`, reqOptions).then(
       handleResponse
     );
   },
@@ -251,7 +263,7 @@ export const api = {
       cache: "no-store" as RequestCache,
     };
     return fetch(
-      `${apiUrl}/app/getAllChannels?${queryString(query)}`,
+      `${apiUrl}/channelApp/getAllChannels?${queryString(query)}`,
       reqOptions
     ).then(handleResponse);
   },
@@ -262,7 +274,7 @@ export const api = {
       credentials: "include" as RequestCredentials,
       cache: "no-store" as RequestCache,
     };
-    return fetch(`${apiUrl}/app/getBankDetails/${id}`, reqOptions).then(
+    return fetch(`${apiUrl}/channelApp/getBankDetails/${id}`, reqOptions).then(
       handleResponse
     );
   },
@@ -295,7 +307,9 @@ export const api = {
       cache: "no-store" as RequestCache,
     };
     return fetch(
-      `${apiUrl}/app/getChannelActivityDetailsbyStatus?${queryString(query)}`,
+      `${apiUrl}/channelApp/getChannelActivityDetailsbyStatus?${queryString(
+        query
+      )}`,
       reqOptions
     ).then(handleResponse);
   },
@@ -307,7 +321,7 @@ export const api = {
       cache: "no-store" as RequestCache,
     };
     return fetch(
-      `${apiUrl}/app/getBarGraphData?${queryString(query)}`,
+      `${apiUrl}/channelApp/getBarGraphData?${queryString(query)}`,
       reqOptions
     ).then(handleResponse);
   },
@@ -319,7 +333,7 @@ export const api = {
       cache: "no-store" as RequestCache,
     };
     return fetch(
-      `${apiUrl}/app/getDashboardActivityDetails?${queryString(query)}`,
+      `${apiUrl}/channelApp/getDashboardActivityDetails?${queryString(query)}`,
       reqOptions
     ).then(handleResponse);
   },
@@ -332,7 +346,7 @@ export const api = {
       headers,
     };
     return fetch(
-      `${apiUrl}/app/updateChannelActivitiesCancelled`,
+      `${apiUrl}/channelApp/updateChannelActivitiesCancelled`,
       reqOptions
     ).then(handleResponse);
   },
@@ -345,8 +359,40 @@ export const api = {
       headers,
     };
     return fetch(
-      `${apiUrl}/app/updateChannelActivitiesReschedule`,
+      `${apiUrl}/channelApp/updateChannelActivitiesReschedule`,
       reqOptions
     ).then(handleResponse);
+  },
+  resendSignoffLink: async function (body: ISendResendSignoffLinkBody) {
+    const headers = await authHeaders();
+    const reqOptions = {
+      method: "POST",
+      body: JSON.stringify(body),
+      credentials: "include" as RequestCredentials,
+      headers,
+    };
+    return fetch(`${apiUrl}/channelApp/reSendSignOffLink`, reqOptions).then(
+      handleResponse
+    );
+  },
+  sendManagerOTP: async function (body: ISendManagerOTPRequestBody) {
+    const headers = await authHeaders();
+    const reqOptions = {
+      method: "POST",
+      body: JSON.stringify(body),
+      credentials: "include" as RequestCredentials,
+      headers,
+    };
+    return fetch(`${apiUrl}/soc/send-otp`, reqOptions).then(handleResponse);
+  },
+  verifyManagerOTP: async function (body: IVerifyManagerOTPRequestBody) {
+    const headers = await authHeaders();
+    const reqOptions = {
+      method: "POST",
+      body: JSON.stringify(body),
+      credentials: "include" as RequestCredentials,
+      headers,
+    };
+    return fetch(`${apiUrl}/soc/verify-otp`, reqOptions).then(handleResponse);
   },
 };

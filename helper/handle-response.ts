@@ -49,6 +49,10 @@ export async function handleResponse(response: Response) {
       return Promise.reject(new AppUpdateRequiredError());
     }
 
+    if (!response.ok && data?.success === false) {
+      return data;
+    }
+
     if (!response.ok) {
       return Promise.reject(new Error(data?.message || "Something went wrong"));
     }

@@ -12,6 +12,7 @@ import {
   Platform,
   Image,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
@@ -19,7 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { formDataToObject } from "@/helper";
 import { api } from "@/utils/api";
-import { getLocData } from "@/utils/storage";
+import { getAuthData, getLocData } from "@/utils/storage";
 
 interface UploadedFile {
   id: string;
@@ -36,6 +37,9 @@ const BankDetails = () => {
   const paramChannelId = params.channelId as string;
   const paramChannelName = params.channelName as string;
   const paramActivityId = params.activityId as string;
+  const paramActivityFee = params.activityFee as string;
+  const paramManagerName = params.managerName as string;
+  const paramManagerPhone = params.managerPhone as string;
 
   const [formData, setFormData] = useState({
     bankName: "",
@@ -52,11 +56,58 @@ const BankDetails = () => {
   const [isReadOnly, setIsReadOnly] = useState(false);
   const [hasExistingData, setHasExistingData] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [storedAuthData, setStoredAuthData] = useState<any>(null);
+
+  // Manager Modal State
+  const [showManagerModal, setShowManagerModal] = useState(false);
+  const [managerData, setManagerData] = useState({
+    managerName: "",
+    managerPhone: "",
+  });
+  const [isDeclarationChecked, setIsDeclarationChecked] = useState(false);
+  const [otpMode, setOtpMode] = useState(false);
+  const [enteredOTP, setEnteredOTP] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isResendingOTP, setIsResendingOTP] = useState(false);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
+
+  useEffect(() => {
+    setManagerData({
+      managerName: paramManagerName,
+      managerPhone: paramManagerPhone,
+    });
+  }, [paramManagerName, paramManagerPhone]);
 
   const statusBarHeight =
     Platform.OS === "ios"
       ? Constants.statusBarHeight
       : StatusBar.currentHeight || 24;
+
+  const getStoredData = async () => {
+    try {
+      // const LocData = await getLocData();
+      const authData = await getAuthData();
+
+      // if (LocData) setChannelId(LocData.channelId);
+      if (authData) setStoredAuthData(authData);
+    } catch (err) {
+      // setError("Failed to fetch data from storage.");
+      console.log("Error: ", err);
+    }
+  };
+
+  useEffect(() => {
+    getStoredData(); // Get stored values on mount
+  }, []);
 
   // Fetch existing bank details
   const fetchBankDetails = async () => {
@@ -82,6 +133,10 @@ const BankDetails = () => {
             accountNumber: data.bankAccountNumber || "",
             confirmAccountNumber: data.bankAccountNumber || "",
             ifscCode: data.bankIFSCCode || "",
+          });
+          setManagerData({
+            managerName: data.channelManagerName || "",
+            managerPhone: data.channelManagerPhone || "",
           });
 
           // Handle cancelled check file if exists
@@ -122,6 +177,13 @@ const BankDetails = () => {
         [field]: value,
       }));
     }
+  };
+
+  const updateManagerField = (field: string, value: string) => {
+    setManagerData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleEdit = () => {
@@ -177,6 +239,36 @@ const BankDetails = () => {
     return true;
   };
 
+  const validateManagerData = () => {
+    const { managerName, managerPhone } = managerData;
+
+    if (!managerName.trim()) {
+      Alert.alert("Validation Error", "Please enter manager name");
+      return false;
+    }
+
+    if (!managerPhone.trim()) {
+      Alert.alert("Validation Error", "Please enter manager phone number");
+      return false;
+    }
+
+    // Basic phone number validation (10 digits)
+    if (managerPhone.length !== 10 || !/^\d+$/.test(managerPhone)) {
+      Alert.alert(
+        "Validation Error",
+        "Please enter a valid 10-digit phone number"
+      );
+      return false;
+    }
+
+    if (!isDeclarationChecked) {
+      Alert.alert("Validation Error", "Please accept the signoff declaration");
+      return false;
+    }
+
+    return true;
+  };
+
   // Request permissions for camera and media library
   const requestPermissions = async () => {
     const { status: cameraStatus } =
@@ -203,7 +295,7 @@ const BankDetails = () => {
 
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -231,7 +323,7 @@ const BankDetails = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
+      allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
@@ -292,73 +384,157 @@ const BankDetails = () => {
     return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + " " + sizes[i];
   };
 
-  const handleSubmit = async () => {
-    try {
-      setIsSubmitting(true);
+  const handleSaveClick = () => {
+    if (!validateForm()) {
+      return;
+    }
+    // Show manager modal
+    setShowManagerModal(true);
+  };
 
-      if (!validateForm()) {
-        return;
-      }
+  const handleManagerSubmit = (type: "link" | "otp") => {
+    if (!validateManagerData()) {
+      return;
+    }
 
-      // Here you can process the form data and uploaded files
-      console.log("Bank Details:", formData);
-      console.log("Uploaded files:", uploadedFiles);
+    setIsSubmitting(true);
 
-      // Create FormData object
-      const formDataToSend = new FormData();
+    // Create FormData object
+    const formDataToSend = new FormData();
 
-      // Append form fields - Send the channelTypeId to the API
-      formDataToSend.append("channelId", paramChannelId);
-      formDataToSend.append("activityId", paramActivityId);
-      formDataToSend.append("bankName", formData.bankName);
-      formDataToSend.append("accountName", formData.accountName);
-      formDataToSend.append("accountNumber", formData.accountNumber);
-      formDataToSend.append("ifscCode", formData.ifscCode);
+    console.log("storedAuthData====**", storedAuthData);
 
-      // Append uploaded files
-      uploadedFiles.forEach((file, index) => {
-        const fileObj = {
-          uri: file.uri,
-          type: file.type === "image" ? "image/jpeg" : "application/pdf",
-          name: file.name,
-        } as any;
+    // Append form fields
+    formDataToSend.append("channelId", paramChannelId);
+    formDataToSend.append("activityId", paramActivityId);
+    formDataToSend.append("activityFee", paramActivityFee);
+    formDataToSend.append("bankName", formData.bankName);
+    formDataToSend.append("accountName", formData.accountName);
+    formDataToSend.append("accountNumber", formData.accountNumber);
+    formDataToSend.append("ifscCode", formData.ifscCode);
+    formDataToSend.append("channelManagerName", managerData.managerName);
+    formDataToSend.append("channelManagerPhone", managerData.managerPhone);
+    formDataToSend.append("userId", storedAuthData?.userId);
+    formDataToSend.append("type", type);
 
-        formDataToSend.append(`files`, fileObj);
-      });
+    // Append uploaded files
+    uploadedFiles.forEach((file, index) => {
+      const fileObj = {
+        uri: file.uri,
+        type: file.type === "image" ? "image/jpeg" : "application/pdf",
+        name: file.name,
+      } as any;
 
-      formDataToObject(formDataToSend, "Bank Details");
+      formDataToSend.append(`files`, fileObj);
+    });
 
-      // Call the API
-      const response = await api.addBankDetails(formDataToSend);
+    formDataToObject(formDataToSend, "Bank Details");
 
-      if (response && response.success) {
-        Alert.alert(
-          "Success",
-          hasExistingData
-            ? "Bank details updated successfully!"
-            : `Channel registered successfully! ${uploadedFiles.length} file(s) uploaded.`
-        );
+    // API call
+    api
+      .addBankDetails(formDataToSend)
+      .then((response) => {
+        if (response && response.success) {
+          if (type === "otp") {
+            setOtpMode(true);
+            return;
+          } else {
+            Alert.alert(
+              "Success",
+              hasExistingData
+                ? "Bank details updated successfully!"
+                : `Channel registered successfully! ${uploadedFiles.length} file(s) uploaded.`
+            );
 
-        // Refresh the data and switch back to read-only mode
-        await fetchBankDetails();
-        setIsEditing(false);
-      } else {
+            // Close modal and reset
+            setShowManagerModal(false);
+            setIsDeclarationChecked(false);
+            setOtpMode(false);
+            setEnteredOTP("");
+            router.replace("/(screens)/MainDashboard");
+
+            // Refresh and exit edit mode
+            fetchBankDetails().then(() => {
+              setIsEditing(false);
+            });
+          }
+        } else {
+          Alert.alert(
+            "Error",
+            response?.message ||
+              "Failed to save bank details. Please try again."
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error submitting form:", error);
         Alert.alert(
           "Error",
-          response?.message || "Failed to save bank details. Please try again."
+          "Failed to save bank details. Please check your connection and try again."
         );
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
+  };
+
+  const handleResendOTP = async () => {
+    try {
+      setIsResendingOTP(true);
+      const response = await api.sendManagerOTP({
+        id: paramActivityId,
+        phone: managerData.managerPhone,
+      });
+
+      if (response && response.success) {
+        Alert.alert("OTP Sent", "OTP has been sent to manager's phone number");
+        setResendTimer(60); // 60 seconds timer
+      } else {
+        Alert.alert("Error", response?.message || "Failed to send OTP");
       }
     } catch (error) {
-      console.error("Error submitting form:", error);
-      Alert.alert(
-        "Error",
-        "Failed to save bank details. Please check your connection and try again."
-      );
+      console.error("Error sending OTP:", error);
+      Alert.alert("Error", "Failed to send OTP. Please try again.");
+    } finally {
+      setIsResendingOTP(false);
+    }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!enteredOTP.trim()) {
+      Alert.alert("Validation Error", "Please enter OTP");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await api.verifyManagerOTP({
+        id: paramActivityId,
+        otp: enteredOTP,
+        phone: managerData.managerPhone,
+      });
+
+      if (response && response.success) {
+        Alert.alert("OTP Verified", "OTP verified successfully");
+        router.replace("/(screens)/MainDashboard");
+      } else {
+        Alert.alert("Error", response?.message || "Invalid OTP");
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      Alert.alert("Error", "Failed to verify OTP. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const handleCloseModal = () => {
+    setShowManagerModal(false);
+    setIsDeclarationChecked(false);
+    setOtpMode(false);
+    setEnteredOTP("");
+    setResendTimer(0);
+  };
   if (isLoading) {
     return (
       <SafeAreaView
@@ -524,7 +700,8 @@ const BankDetails = () => {
           {/* Cancelled Cheque Upload Section */}
           <View className="mb-6">
             <Text className="text-sm font-medium text-gray-700 mb-3">
-              Cancelled Cheque Copy <Text className="text-red-500">*</Text>
+              Cancelled Cheque Copy
+              {/* <Text className="text-red-500">*</Text> */}
             </Text>
             <Text className="text-xs text-gray-500 mb-3">
               Upload a clear image of cancelled cheque or PDF document
@@ -645,27 +822,211 @@ const BankDetails = () => {
 
             {/* Save button - always show, with appropriate styling */}
             <TouchableOpacity
-              onPress={handleSubmit}
+              onPress={handleSaveClick}
               className={`${
                 hasExistingData && !isReadOnly ? "flex-1" : "flex-1"
               } bg-primary rounded-lg p-4 items-center`}
               disabled={isSubmitting}
             >
-              {isSubmitting ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text className="text-white font-semibold text-lg">
-                  {hasExistingData && isReadOnly
-                    ? "Save Bank Details"
-                    : hasExistingData
+              <Text className="text-white font-semibold text-lg">
+                {hasExistingData && isReadOnly
+                  ? "Save Bank Details"
+                  : hasExistingData
                     ? "Update Bank Details"
                     : "Save Bank Details"}
-                </Text>
-              )}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+
+      {/* Manager Details Modal */}
+      <Modal
+        visible={showManagerModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
+          <View className="bg-white rounded-lg p-6 mx-4 w-full max-w-sm">
+            <Text className="text-xl font-bold text-gray-800 mb-4 text-center">
+              Manager Details
+            </Text>
+
+            <Text className="text-sm text-gray-600 mb-6 text-center">
+              Please provide manager contact information
+            </Text>
+
+            {/* Manager Name */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 mb-2">
+                Manager Name <Text className="text-red-500">*</Text>
+              </Text>
+              <TextInput
+                value={managerData.managerName}
+                onChangeText={(value) =>
+                  updateManagerField("managerName", value)
+                }
+                placeholder="Enter manager name"
+                className="border border-gray-300 rounded-lg p-3 bg-white"
+              />
+            </View>
+
+            {/* Manager Phone */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 mb-2">
+                Manager Phone Number <Text className="text-red-500">*</Text>
+              </Text>
+              <TextInput
+                value={managerData.managerPhone}
+                onChangeText={(value) =>
+                  updateManagerField("managerPhone", value)
+                }
+                placeholder="Enter 10-digit phone number"
+                keyboardType="numeric"
+                maxLength={10}
+                className="border border-gray-300 rounded-lg p-3 bg-white"
+              />
+            </View>
+
+            {/* Signoff Declaration */}
+            <View className="mb-6">
+              <TouchableOpacity
+                onPress={() => setIsDeclarationChecked(!isDeclarationChecked)}
+                className="flex-row items-start"
+              >
+                <View
+                  className={`w-5 h-5 border-2 rounded mr-3 mt-1 items-center justify-center ${
+                    isDeclarationChecked
+                      ? "bg-blue-500 border-blue-500"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  {isDeclarationChecked && (
+                    <Text className="text-white text-xs font-bold">✓</Text>
+                  )}
+                </View>
+                <View className="flex-1">
+                  <Text className="text-sm text-gray-700 leading-5">
+                    I hereby declare that the activity and bank details provided
+                    above have been verified and are factually correct.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Action Buttons */}
+            {/* OTP Input Section - Show when in OTP mode */}
+            {otpMode && (
+              <View className="mb-4">
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Enter OTP <Text className="text-red-500">*</Text>
+                </Text>
+                <TextInput
+                  value={enteredOTP}
+                  onChangeText={setEnteredOTP}
+                  placeholder="Enter 6-digit OTP"
+                  // keyboardType="numeric"
+                  maxLength={6}
+                  className="border border-gray-300 rounded-lg p-3 bg-white"
+                />
+
+                {/* Resend OTP Button */}
+                <TouchableOpacity
+                  onPress={handleResendOTP}
+                  disabled={resendTimer > 0 || isResendingOTP}
+                  className={`mt-2 p-2 rounded ${
+                    resendTimer > 0 || isResendingOTP
+                      ? "bg-gray-300"
+                      : "bg-blue-500"
+                  }`}
+                >
+                  {isResendingOTP ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text
+                      className={`text-center font-medium ${
+                        resendTimer > 0 ? "text-gray-500" : "text-white"
+                      }`}
+                    >
+                      {resendTimer > 0
+                        ? `Resend OTP in ${resendTimer}s`
+                        : "Resend OTP"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Modal Action Buttons */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCloseModal}
+                className="flex-1 bg-gray-500 rounded-lg p-3 items-center"
+                disabled={isSubmitting}
+              >
+                <Text className="text-white font-semibold">Cancel</Text>
+              </TouchableOpacity>
+
+              {otpMode ? (
+                <TouchableOpacity
+                  onPress={handleVerifyOTP}
+                  className="flex-1 bg-primary rounded-lg p-3 items-center"
+                  disabled={isSubmitting || !enteredOTP.trim()}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text className="text-white font-semibold">Submit</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    onPress={() => handleManagerSubmit("link")}
+                    className={`flex-1 rounded-lg p-3 items-center ${
+                      isDeclarationChecked ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                    disabled={isSubmitting || !isDeclarationChecked}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text
+                        className={`font-semibold ${
+                          isDeclarationChecked ? "text-white" : "text-gray-500"
+                        }`}
+                      >
+                        Send Link
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleManagerSubmit("otp")}
+                    className={`flex-1 rounded-lg p-3 items-center ${
+                      isDeclarationChecked ? "bg-primary" : "bg-gray-300"
+                    }`}
+                    disabled={isSubmitting || !isDeclarationChecked}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text
+                        className={`font-semibold ${
+                          isDeclarationChecked ? "text-white" : "text-gray-500"
+                        }`}
+                      >
+                        Send OTP
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };

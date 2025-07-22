@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Alert } from "react-native";
-import DynamicDropdown from "@/components/DynamicDropdown";
 import { api } from "@/utils/api";
 
 // You'll need to install this package: npm install indian-pincodes
@@ -51,6 +50,23 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   showLabels = true,
 }) => {
   const [isLoadingPincode, setIsLoadingPincode] = useState(false);
+  const [allCities, setAllCities] = useState<City[]>([]);
+
+  // Fetch all cities on component mount
+  useEffect(() => {
+    fetchAllCities();
+  }, []);
+
+  const fetchAllCities = async () => {
+    try {
+      const response = await api.getAllCities({ page: 1, limit: 1000 }); // Adjust limit as needed
+      if (response?.data?.items) {
+        setAllCities(response.data.items);
+      }
+    } catch (error) {
+      console.error("Error fetching cities:", error);
+    }
+  };
 
   // Handle address change
   const handleAddressChange = (address: string) => {
@@ -60,23 +76,51 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     });
   };
 
-  // Handle city selection
-  const handleCitySelect = (item: any) => {
-    const city = item as City;
+  // Handle manual city change
+  const handleCityChange = (cityName: string) => {
     onChange({
       ...value,
-      cityId: city.id,
-      cityName: `${city.name}`,
+      cityName,
+      cityId: "", // Clear cityId when manually typing
     });
   };
 
-  // Format city display text for dropdown
-  const formatCityDisplayText = (item: any) => {
-    const city = item as City;
-    return `${city.name}\n${city.state}`;
+  // Find matching city based on pincode data
+  const findMatchingCity = (
+    cityNameFromPincode: string,
+    stateFromPincode: string
+  ): City | null => {
+    if (!allCities || allCities.length === 0) return null;
+
+    // First, try exact match with city name and state
+    let matchingCity = allCities.find(
+      (city) =>
+        city.name.toLowerCase() === cityNameFromPincode.toLowerCase() &&
+        city.state.toLowerCase() === stateFromPincode.toLowerCase()
+    );
+
+    // If no exact match, try partial match with city name
+    if (!matchingCity) {
+      matchingCity = allCities.find(
+        (city) =>
+          city.name.toLowerCase().includes(cityNameFromPincode.toLowerCase()) &&
+          city.state.toLowerCase() === stateFromPincode.toLowerCase()
+      );
+    }
+
+    // If still no match, try reverse - check if pincode city name contains our city name
+    if (!matchingCity) {
+      matchingCity = allCities.find(
+        (city) =>
+          cityNameFromPincode.toLowerCase().includes(city.name.toLowerCase()) &&
+          city.state.toLowerCase() === stateFromPincode.toLowerCase()
+      );
+    }
+
+    return matchingCity || null;
   };
 
-  // Handle pincode change and fetch state
+  // Handle pincode change and fetch state/city
   const handlePincodeChange = async (pincode: string) => {
     // Only allow numeric input
     const numericPincode = pincode.replace(/[^0-9]/g, "");
@@ -84,30 +128,63 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     // Limit to 6 digits
     const limitedPincode = numericPincode.slice(0, 6);
 
+    // Clear state and city if pincode is incomplete
+    if (limitedPincode.length < 6) {
+      onChange({
+        ...value,
+        pincode: limitedPincode,
+        state: "",
+        cityId: "",
+        cityName: "",
+      });
+      return;
+    }
+
+    // Update pincode immediately
     onChange({
       ...value,
       pincode: limitedPincode,
-      state: limitedPincode.length === 6 ? value.state : "", // Clear state if pincode is incomplete
     });
 
-    // Fetch state when pincode is 6 digits
+    // Fetch state and city when pincode is 6 digits
     if (limitedPincode.length === 6) {
       setIsLoadingPincode(true);
       try {
-        // Using indian-pincodes package
         console.log("limitedPincode----", limitedPincode);
         const pincodeData = pincodes.lookup(limitedPincode);
         console.log("pincodeData---", pincodeData);
 
         if (pincodeData && pincodeData.length > 0) {
           const state = pincodeData[0].stateName || pincodeData[0].state;
-          onChange({
-            ...value,
-            pincode: limitedPincode,
-            state: state,
-          });
+          const cityFromPincode =
+            pincodeData[0].districtName ||
+            pincodeData[0].district ||
+            pincodeData[0].city;
+
+          // Find matching city in our database
+          const matchingCity = findMatchingCity(cityFromPincode, state);
+
+          if (matchingCity) {
+            // Auto-fill the city name
+            onChange({
+              ...value,
+              pincode: limitedPincode,
+              state: state,
+              cityName: cityFromPincode,
+              cityId: matchingCity ? matchingCity.id : "",
+            });
+          } else {
+            // If no matching city found, just update with pincode city name
+            onChange({
+              ...value,
+              pincode: limitedPincode,
+              state: state,
+              cityName: cityFromPincode,
+              cityId: "",
+            });
+          }
         } else {
-          // If pincode not found, show alert and clear state
+          // If pincode not found, show alert and clear state/city
           Alert.alert(
             "Invalid Pincode",
             "The entered pincode is not valid. Please check and try again."
@@ -116,6 +193,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             ...value,
             pincode: limitedPincode,
             state: "",
+            cityName: "",
+            cityId: "",
           });
         }
       } catch (error) {
@@ -128,6 +207,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           ...value,
           pincode: limitedPincode,
           state: "",
+          cityName: "",
+          cityId: "",
         });
       } finally {
         setIsLoadingPincode(false);
@@ -159,47 +240,46 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         />
       </View>
 
-      {/* City Dropdown */}
-      <View className="mb-2">
-        <DynamicDropdown
-          label={showLabels ? "City" : undefined}
-          placeholder="Select City"
-          isRequired={isRequired}
-          selectedValue={value.cityId}
-          selectedLabel={value.cityName}
-          onSelect={handleCitySelect}
-          apiCall={api.getAllCities}
-          searchable={true}
-          pageSize={10}
-          formatDisplayText={formatCityDisplayText}
-          searchPlaceholder="Search cities..."
-          noDataMessage="No cities found"
-          errorMessage="Failed to load cities. Please try again."
-          maxHeight={320}
+      {/* Pincode Field */}
+      <View className="flex-1 mb-4">
+        {showLabels && (
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Pincode {requiredAsterisk}
+          </Text>
+        )}
+        <TextInput
+          value={value.pincode}
+          onChangeText={handlePincodeChange}
+          placeholder="Enter 6-digit pincode"
+          keyboardType="numeric"
+          maxLength={6}
+          className="border border-gray-300 rounded-lg p-3 bg-white"
+          editable={!isLoadingPincode}
         />
+        {isLoadingPincode && (
+          <Text className="text-xs text-blue-600 mt-1">
+            Validating pincode...
+          </Text>
+        )}
       </View>
 
       {/* Pincode and State Row */}
-      <View className="flex-row space-x-3 gap-2">
-        {/* Pincode Field */}
+      <View className="flex-row gap-2">
+        {/* City Input Field */}
         <View className="flex-1">
           {showLabels && (
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Pincode {requiredAsterisk}
-            </Text>
+            <Text className="text-sm font-medium text-gray-700 mb-2">City</Text>
           )}
           <TextInput
-            value={value.pincode}
-            onChangeText={handlePincodeChange}
-            placeholder="Enter 6-digit pincode"
-            keyboardType="numeric"
-            maxLength={6}
-            className="border border-gray-300 rounded-lg p-3 bg-white"
-            editable={!isLoadingPincode}
+            value={value.cityName}
+            onChangeText={handleCityChange}
+            placeholder="City will auto-populate"
+            className="border border-gray-300 rounded-lg p-3 bg-gray-50"
+            editable={false}
           />
           {isLoadingPincode && (
             <Text className="text-xs text-blue-600 mt-1">
-              Validating pincode...
+              Auto-filling city from pincode...
             </Text>
           )}
         </View>

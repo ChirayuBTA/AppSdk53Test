@@ -47,6 +47,8 @@ interface Channel {
   name: string;
   slug: string;
   address: string;
+  channelManagerName: string;
+  channelManagerPhone: string;
   ChannelActivityDetails?: ChannelActivityDetail[];
 }
 
@@ -218,6 +220,8 @@ const ChannelList = () => {
           params: {
             channelId: channel.id,
             channelName: channel.name,
+            managerName: channel.channelManagerName,
+            managerPhone: channel.channelManagerPhone,
           },
         });
         return;
@@ -229,6 +233,8 @@ const ChannelList = () => {
     router.push({
       pathname: "/(form)/ActivityDetails",
       params: {
+        managerName: channel.channelManagerName,
+        managerPhone: channel.channelManagerPhone,
         channelId: channel.id,
         channelName: channel.name,
       },

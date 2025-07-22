@@ -66,55 +66,56 @@ const AddArea = () => {
     return true;
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (!validateForm()) {
-        return;
-      }
+  const handleSubmit = () => {
+    if (!validateForm()) {
+      return;
+    }
 
-      setIsSubmitting(true);
+    setIsSubmitting(true);
 
-      const requestBody = {
-        name: formData.areaName.trim(),
-        cityId: formData.cityId,
-      };
+    const requestBody = {
+      name: formData.areaName.trim(),
+      cityId: formData.cityId,
+    };
 
-      console.log("Submitting area data:", requestBody);
+    console.log("Submitting area data:", requestBody);
 
-      // Call the API
-      const response = await api.createArea(requestBody);
-
-      if (response && response.success) {
-        Alert.alert("Success", "Area created successfully!", [
-          {
-            text: "OK",
-            onPress: () => {
-              // Reset form
-              setFormData({
-                areaName: "",
-                cityId: "",
-                cityName: "",
-              });
-              // Navigate back or to a specific screen
-              router.back();
+    api
+      .createArea(requestBody)
+      .then((response) => {
+        if (response && response.success) {
+          Alert.alert("Success", "Area created successfully!", [
+            {
+              text: "OK",
+              onPress: () => {
+                // Reset form
+                setFormData({
+                  areaName: "",
+                  cityId: "",
+                  cityName: "",
+                });
+                // Navigate back
+                router.back();
+              },
             },
-          },
-        ]);
-      } else {
+          ]);
+        } else {
+          Alert.alert(
+            "Error",
+            response?.message || "Failed to create area. Please try again."
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error creating area:", error);
         Alert.alert(
           "Error",
-          response?.message || "Failed to create area. Please try again."
+          "Failed to create area. Please check your connection and try again."
         );
-      }
-    } catch (error) {
-      console.error("Error creating area:", error);
-      Alert.alert(
-        "Error",
-        "Failed to create area. Please check your connection and try again."
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   return (

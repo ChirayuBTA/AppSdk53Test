@@ -1,28 +1,28 @@
-import AnalyticsDashboard from "@/components/AnalyticsDashboard";
-import CustomHeader from "@/components/CustomHeader";
-import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { format } from "date-fns";
-import Constants from "expo-constants";
-import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
+  View,
+  Text,
+  TouchableOpacity,
+  FlatList,
+  StatusBar,
+  SafeAreaView,
+  Platform,
+  TextInput,
   ActivityIndicator,
   Alert,
-  Animated,
-  FlatList,
-  Modal,
-  Platform,
   RefreshControl,
-  SafeAreaView,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  Animated,
+  Modal,
 } from "react-native";
-import { api } from "../../utils/api";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import Constants from "expo-constants";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { getAuthValue } from "../../utils/storage";
+import { api } from "../../utils/api";
+import { format } from "date-fns";
+import CustomHeader from "@/components/CustomHeader";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
 
 interface ChannelStats {
   totalChannels: number;
@@ -52,11 +52,16 @@ interface Activity {
   name: string;
 }
 
+interface ChannelTransaction {
+  UTR: string;
+}
+
 interface ChannelItem {
   id: string;
   name: string;
   description: string;
   status: string;
+  PaymentStatus: string;
   createdDate: string;
   // lastActive: string;
   revenue: number;
@@ -66,10 +71,13 @@ interface ChannelItem {
   brand?: Brand;
   project?: Project;
   activity?: Activity;
+  ChannelTransaction?: ChannelTransaction[];
   activityPlannedDate: string;
   activityToDate: string;
   activityFromDate: string;
   activityType?: string;
+  channelManagerName?: string;
+  channelManagerPhone?: string;
   channelName?: string;
   channelDescription?: string;
 }
@@ -126,9 +134,13 @@ const MainDashboard = () => {
   const [fabAnimation] = useState(new Animated.Value(0));
 
   // Search debounce state
-  const [searchTimeout, setSearchTimeout] = useState<NodeJS.Timeout | null>(
-    null
-  );
+  const [searchTimeout, setSearchTimeout] = useState<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  // Cancel Modal state
+  const [showCancelReasonModal, setShowCancelReasonModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
 
   // Reschedule Modal State
   const [showRescheduleModal, setShowRescheduleModal] = useState(false);
@@ -148,8 +160,30 @@ const MainDashboard = () => {
   });
   const [rescheduling, setRescheduling] = useState(false);
 
+  const [showManagerModal, setShowManagerModal] = useState(false);
+  const [managerData, setManagerData] = useState({
+    managerName: "",
+    managerPhone: "",
+  });
+  const [isDeclarationChecked, setIsDeclarationChecked] = useState(false);
+  const [otpMode, setOtpMode] = useState(false);
+  const [enteredOTP, setEnteredOTP] = useState("");
+  const [resendTimer, setResendTimer] = useState(0);
+  const [isResendingOTP, setIsResendingOTP] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const router = useRouter();
   const currentDate = format(new Date(), "EEEE, MMMM d, yyyy");
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prevTimer) => prevTimer - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   // Get status bar height
   const statusBarHeight =
@@ -180,14 +214,10 @@ const MainDashboard = () => {
   const getStoredData = async () => {
     try {
       const storedUserId = await getAuthValue("userId");
-      const storedUserName = await getAuthValue("userName");
 
-      setUserId(storedUserId || "dummy-user-123");
-      setUserName(storedUserName || "John Admin");
+      setUserId(storedUserId);
     } catch (err) {
       console.log("Error getting stored data: ", err);
-      setUserId("dummy-user-123");
-      setUserName("John Admin");
     }
   };
 
@@ -214,6 +244,7 @@ const MainDashboard = () => {
         "No description available",
       category: item.category || item.activityType || "General",
       status: item.status,
+      PaymentStatus: item.PaymentStatus,
       createdDate:
         item.createdAt || item.createdDate || new Date().toISOString(),
       // lastActive: item.updatedAt || item.lastActive || new Date().toISOString(),
@@ -226,11 +257,16 @@ const MainDashboard = () => {
       activityFromDate: item.activityFromDate,
       activityType: item.activityType,
       channelName: item.channelName,
+      channelManagerName: item.channelManagerName,
+      channelManagerPhone: item.channelManagerPhone,
       channelDescription: item.channelDescription,
       activityLocation: item.activityLocation,
       brand: item.brand,
       project: item.project,
       activity: item.activity,
+      ChannelTransaction: Array.isArray(item.ChannelTransaction)
+        ? item.ChannelTransaction
+        : [],
     }));
   };
 
@@ -438,10 +474,13 @@ const MainDashboard = () => {
           onPress: async () => {
             const payload = {
               id: item.id,
+              status: item.status,
+              cancelledReason: cancelReason,
             };
             try {
               await api.cancelActivity(payload);
               Alert.alert("Success", "Activity cancelled successfully");
+              handleCloseCancelModal();
               fetchChannels(); // Refresh the list
             } catch (error) {
               console.log("Error cancelling activity:", error);
@@ -489,11 +528,39 @@ const MainDashboard = () => {
     return format(date, "h:mm a");
   };
 
-  // Get minimum date (T+2)
+  // Get minimum date (T+2, or T+1 if PAYMENT_COMPLETED)
   const getMinimumDate = () => {
-    const minDate = new Date();
-    minDate.setDate(minDate.getDate() + 2);
-    return minDate;
+    const today = new Date();
+    const day = today.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+
+    // If selected activity has PAYMENT_COMPLETED status, allow T+1
+    if (selectedActivity?.status === "PAYMENT_COMPLETED") {
+      today.setDate(today.getDate() + 1); // T+1
+      return today;
+    }
+
+    // For past tab activities that are not completed, allow T+1
+    if (activeTab === "past" && selectedActivity?.status !== "COMPLETED") {
+      today.setDate(today.getDate() + 1); // T+1
+      return today;
+    }
+
+    // Weekend handling for non-PAYMENT_COMPLETED activities
+    if (day === 5) {
+      // Friday
+      today.setDate(today.getDate() + 4); // T+4
+      return today;
+    }
+
+    if (day === 6) {
+      // Saturday
+      today.setDate(today.getDate() + 3); // T+3
+      return today;
+    }
+
+    // Default: T+2 for regular activities
+    today.setDate(today.getDate() + 2);
+    return today;
   };
 
   // Date picker handlers
@@ -529,6 +596,151 @@ const MainDashboard = () => {
         }));
       }
     }
+  };
+
+  const handleSignOff = (item: ChannelItem) => {
+    setSelectedActivity(item);
+    setManagerData({
+      managerName: item.channelManagerName ?? "",
+      managerPhone: item.channelManagerPhone ?? "",
+    });
+    setShowManagerModal(true);
+  };
+
+  const handleManagerSubmit = async (type: "link" | "otp") => {
+    console.log("type---", type);
+    setIsSubmitting(true);
+    if (type === "link") {
+      api
+        .resendSignoffLink({
+          activityId: selectedActivity?.id ?? "",
+          phone: managerData.managerPhone,
+        })
+        .then((response) => {
+          if (response && response.success) {
+            Alert.alert(
+              "Link Sent to manager phone number",
+              "Link has been sent to manager's phone number"
+            );
+          } else {
+            Alert.alert("Error", response?.message || "Failed to send Lnk");
+          }
+          handleCloseModal();
+        })
+        .catch((error) => {
+          console.error("Error sending Link:", error);
+          Alert.alert("Error", "Failed to send Link. Please try again.");
+        })
+        .finally(() => {
+          setIsSubmitting(false);
+        });
+    }
+    if (type === "otp") {
+      api
+        .sendManagerOTP({
+          id: selectedActivity?.id ?? "",
+          phone: managerData.managerPhone,
+        })
+        .then((response) => {
+          if (response && response.success) {
+            Alert.alert(
+              "OTP Sent",
+              "OTP has been sent to manager's phone number"
+            );
+            setOtpMode(true);
+            setResendTimer(60); // 60 seconds timer
+          } else {
+            Alert.alert("Error", response?.message || "Failed to send OTP");
+          }
+        })
+        .catch((error) => {
+          console.error("Error sending OTP:", error);
+          Alert.alert("Error", "Failed to send OTP. Please try again.");
+        })
+        .finally(() => {
+          setIsSubmitting(false);
+        });
+    }
+  };
+
+  const handleResendOTP = () => {
+    setIsResendingOTP(true);
+
+    api
+      .sendManagerOTP({
+        id: selectedActivity?.id ?? "",
+        phone: managerData.managerPhone,
+      })
+      .then((response) => {
+        if (response && response.success) {
+          Alert.alert(
+            "OTP Sent",
+            "OTP has been sent to manager's phone number"
+          );
+          setResendTimer(60); // 60 seconds timer
+        } else {
+          Alert.alert("Error", response?.message || "Failed to send OTP");
+        }
+      })
+      .catch((error) => {
+        console.error("Error sending OTP:", error);
+        Alert.alert("Error", "Failed to send OTP. Please try again.");
+      })
+      .finally(() => {
+        setIsResendingOTP(false);
+      });
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!enteredOTP.trim()) {
+      Alert.alert("Validation Error", "Please enter OTP");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = await api.verifyManagerOTP({
+        id: selectedActivity?.id ?? "",
+        otp: enteredOTP,
+        phone: managerData.managerPhone,
+      });
+
+      if (response && response.success) {
+        Alert.alert("OTP Verified", "OTP verified successfully");
+        router.replace("/(screens)/MainDashboard");
+      } else {
+        Alert.alert("Error", response?.message || "Invalid OTP");
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      Alert.alert("Error", "Failed to verify OTP. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowManagerModal(false);
+    setIsDeclarationChecked(false);
+    setOtpMode(false);
+    setEnteredOTP("");
+    setResendTimer(0);
+  };
+
+  const openCancelReasonModal = (item: ChannelItem) => {
+    setSelectedActivity(item);
+    setShowCancelReasonModal(true);
+  };
+
+  const handleCloseCancelModal = () => {
+    setShowCancelReasonModal(false);
+  };
+
+  const updateManagerField = (field: string, value: string) => {
+    setManagerData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   // Render tab bar with counts
@@ -581,7 +793,7 @@ const MainDashboard = () => {
   const renderStatsCards = () => (
     <View className="mx-4 my-4">
       {/* Welcome Card */}
-      <View className="bg-white rounded-3xl shadow-md p-6 mb-4">
+      {/* <View className="bg-white rounded-3xl shadow-md p-6 mb-4">
         <View className="items-center mb-4">
           <Text className="text-3xl font-semibold text-gray-800">Welcome!</Text>
           <View className="flex-row items-center mt-2">
@@ -589,7 +801,7 @@ const MainDashboard = () => {
             <Text className="text-gray-500 ml-2">{currentDate}</Text>
           </View>
         </View>
-      </View>
+      </View> */}
 
       {/* Analytics Dashboard */}
       <AnalyticsDashboard onDataChange={handleAnalyticsDataChange} />
@@ -604,6 +816,8 @@ const MainDashboard = () => {
         <Text className="text-xl font-semibold text-gray-900 flex-1 pr-2">
           {item.activity?.name || "Unnamed Activity"}
         </Text>
+
+        {/* Status badge */}
         <View
           className={`px-3 py-1 rounded-full ${
             activeTab === "upcoming"
@@ -622,7 +836,11 @@ const MainDashboard = () => {
                   : "text-red-700"
             }`}
           >
-            {item.status}
+            {activeTab === "cancelled"
+              ? item.PaymentStatus
+              : activeTab === "past" && item.status === "PAYMENT_COMPLETED"
+                ? "Audit Pending"
+                : item.status}
           </Text>
         </View>
       </View>
@@ -639,13 +857,13 @@ const MainDashboard = () => {
         </View>
 
         {/* Time */}
-        <View className="flex-row items-center">
+        {/* <View className="flex-row items-center">
           <Ionicons name="time-outline" size={16} color="#6B7280" />
           <Text className="text-gray-700 ml-2">
             Time: {format(new Date(item.activityFromDate), "hh:mm a")} -{" "}
             {format(new Date(item.activityToDate), "hh:mm a")}
           </Text>
-        </View>
+        </View> */}
 
         {/* Location */}
         {item.activityLocation?.name && (
@@ -666,22 +884,32 @@ const MainDashboard = () => {
         )}
 
         {/* Project */}
-        {item.project?.name && (
+        {/* {item.project?.name && (
           <View className="flex-row items-center">
             <Ionicons name="folder-outline" size={16} color="#6B7280" />
             <Text className="text-gray-700 ml-2">
               Project: {item.project.name}
             </Text>
           </View>
+        )} */}
+
+        {/* UTR */}
+        {item.ChannelTransaction?.[0]?.UTR && (
+          <View className="flex-row items-center">
+            <Ionicons name="receipt-outline" size={16} color="#6B7280" />
+            <Text className="text-gray-700 ml-2">
+              UTR: {item?.ChannelTransaction?.[0]?.UTR}
+            </Text>
+          </View>
         )}
 
         {/* Created Date */}
-        <View className="flex-row items-center">
+        {/* <View className="flex-row items-center">
           <Ionicons name="calendar-outline" size={16} color="#6B7280" />
           <Text className="text-gray-700 ml-2">
             Created: {format(new Date(item.createdDate), "MMM d, yyyy")}
           </Text>
-        </View>
+        </View> */}
 
         {/* Revenue */}
         {item.revenue > 0 && (
@@ -696,25 +924,71 @@ const MainDashboard = () => {
 
       {/* Actions */}
       {activeTab === "upcoming" && (
-        <View className="flex-row space-x-4 gap-2 mt-5">
-          <View className="w-5/6">
+        <View
+          className={`flex-row space-x-4 ${
+            item.status === "SIGNOFF_PENDING" ? "gap-3" : "gap-2"
+          } mt-5`}
+        >
+          {/* Left Section: Reschedule and Sign Off */}
+          <View
+            className={`flex-row ${
+              item.status === "SIGNOFF_PENDING" ? "w-5/6 gap-2" : "w-5/6"
+            }`}
+          >
+            {/* Reschedule Button */}
             <TouchableOpacity
               onPress={() => openRescheduleModal(item)}
-              className="flex-1 bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow"
+              className={`${
+                item.status === "SIGNOFF_PENDING" ? "w-1/2" : "flex-1"
+              } bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow`}
             >
               <Ionicons name="calendar-outline" size={18} color="white" />
               <Text className="text-white font-semibold ml-2">Reschedule</Text>
             </TouchableOpacity>
+
+            {/* Sign Off Button */}
+            {item.status === "SIGNOFF_PENDING" && (
+              <TouchableOpacity
+                onPress={() => handleSignOff(item)}
+                className="w-1/2 bg-green-600 rounded-xl py-3 flex-row items-center justify-center shadow"
+              >
+                <Ionicons
+                  name="checkmark-done-outline"
+                  size={18}
+                  color="white"
+                />
+                <Text className="text-white font-semibold ml-2">
+                  Request Sign Off
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {/* Right Section: Cancel Button */}
           <View className="w-1/6">
             <TouchableOpacity
-              onPress={() => handleCancelActivity(item)}
-              className="flex-1 bg-red-600 rounded-xl py-3 flex-row items-center justify-center shadow"
+              onPress={() => openCancelReasonModal(item)}
+              disabled={item.status === "PAYMENT_PENDING"}
+              className={`flex-1 rounded-xl py-3 flex-row items-center justify-center shadow ${
+                item.status === "PAYMENT_PENDING" ? "bg-gray-400" : "bg-red-600"
+              }`}
             >
               <Ionicons name="close-circle-outline" size={18} color="white" />
-              {/* <Text className="text-white font-semibold ml-2">Cancel</Text> */}
             </TouchableOpacity>
           </View>
+        </View>
+      )}
+
+      {/* Actions for past tab - only show reschedule if status is not completed */}
+      {activeTab === "past" && item.status !== "COMPLETED" && (
+        <View className="flex-row mt-5">
+          <TouchableOpacity
+            onPress={() => openRescheduleModal(item)}
+            className="flex-1 bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow"
+          >
+            <Ionicons name="calendar-outline" size={18} color="white" />
+            <Text className="text-white font-semibold ml-2">Reschedule</Text>
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -745,7 +1019,7 @@ const MainDashboard = () => {
       animationType="slide"
       onRequestClose={closeRescheduleModal}
     >
-      <View className="flex-1 bg-black/50 justify-center items-center p-4">
+      <View className="flex-1 bg-black/80 justify-center items-center p-4">
         <View className="bg-white rounded-2xl p-6 w-full max-w-md">
           <View className="flex-row justify-between items-center mb-6">
             <Text className="text-xl font-bold text-gray-800">
@@ -883,6 +1157,269 @@ const MainDashboard = () => {
     </Modal>
   );
 
+  const renderManagerSignoffModal = () => {
+    return (
+      <Modal
+        visible={showManagerModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
+        <View className="flex-1 bg-black/80 justify-center items-center p-4">
+          <View className="bg-white rounded-lg p-6 mx-4 w-full max-w-sm">
+            <Text className="text-xl font-bold text-gray-800 mb-4 text-center">
+              Manager Details
+            </Text>
+
+            <Text className="text-sm text-gray-600 mb-6 text-center">
+              Please provide manager contact information
+            </Text>
+
+            {/* Manager Name */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 mb-2">
+                Manager Name <Text className="text-red-500">*</Text>
+              </Text>
+              <TextInput
+                value={managerData.managerName}
+                onChangeText={(value) =>
+                  updateManagerField("managerName", value)
+                }
+                placeholder="Enter manager name"
+                editable={!otpMode}
+                className={`border rounded-lg p-3 ${
+                  otpMode
+                    ? "bg-gray-100 border-gray-200 text-gray-500"
+                    : "bg-white border-gray-300 text-black"
+                }`}
+              />
+            </View>
+
+            {/* Manager Phone */}
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 mb-2">
+                Manager Phone Number <Text className="text-red-500">*</Text>
+              </Text>
+              <TextInput
+                value={managerData.managerPhone}
+                onChangeText={(value) =>
+                  updateManagerField("managerPhone", value)
+                }
+                placeholder="Enter 10-digit phone number"
+                keyboardType="numeric"
+                maxLength={10}
+                editable={!otpMode}
+                className={`border rounded-lg p-3 ${
+                  otpMode
+                    ? "bg-gray-100 border-gray-200 text-gray-500"
+                    : "bg-white border-gray-300 text-black"
+                }`}
+              />
+            </View>
+
+            {!otpMode && (
+              //  Signoff Declaration
+              <View className="mb-6">
+                <TouchableOpacity
+                  onPress={() => setIsDeclarationChecked(!isDeclarationChecked)}
+                  className="flex-row items-start"
+                >
+                  <View
+                    className={`w-5 h-5 border-2 rounded mr-3 mt-1 items-center justify-center ${
+                      isDeclarationChecked
+                        ? "bg-blue-500 border-blue-500"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    {isDeclarationChecked && (
+                      <Text className="text-white text-xs font-bold">✓</Text>
+                    )}
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-sm text-gray-700 leading-5">
+                      I hereby declare that the activity and bank details
+                      provided above have been verified and are factually
+                      correct.
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Modal Action Buttons */}
+            {/* OTP Input Section - Show when in OTP mode */}
+            {otpMode && (
+              <View className="mb-4">
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Enter OTP <Text className="text-red-500">*</Text>
+                </Text>
+                <TextInput
+                  value={enteredOTP}
+                  onChangeText={setEnteredOTP}
+                  placeholder="Enter 6-digit OTP"
+                  // keyboardType="numeric"
+                  maxLength={6}
+                  className="border border-gray-300 rounded-lg p-3 bg-white"
+                />
+
+                {/* Resend OTP Button */}
+                <TouchableOpacity
+                  onPress={handleResendOTP}
+                  disabled={resendTimer > 0 || isResendingOTP}
+                  className={`mt-2 p-2 rounded ${
+                    resendTimer > 0 || isResendingOTP
+                      ? "bg-gray-300"
+                      : "bg-blue-500"
+                  }`}
+                >
+                  {isResendingOTP ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text
+                      className={`text-center font-medium ${
+                        resendTimer > 0 ? "text-gray-500" : "text-white"
+                      }`}
+                    >
+                      {resendTimer > 0
+                        ? `Resend OTP in ${resendTimer}s`
+                        : "Resend OTP"}
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Modal Action Buttons */}
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCloseModal}
+                className="flex-1 bg-gray-500 rounded-lg p-3 items-center"
+                disabled={isSubmitting}
+              >
+                <Text className="text-white font-semibold">Cancel</Text>
+              </TouchableOpacity>
+
+              {otpMode ? (
+                <TouchableOpacity
+                  onPress={handleVerifyOTP}
+                  className="flex-1 bg-primary rounded-lg p-3 items-center"
+                  disabled={isSubmitting || !enteredOTP.trim()}
+                >
+                  {isSubmitting ? (
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                  ) : (
+                    <Text className="text-white font-semibold">Submit</Text>
+                  )}
+                </TouchableOpacity>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    onPress={() => handleManagerSubmit("link")}
+                    className={`flex-1 rounded-lg p-3 items-center ${
+                      isDeclarationChecked ? "bg-green-500" : "bg-gray-300"
+                    }`}
+                    disabled={isSubmitting || !isDeclarationChecked}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text
+                        className={`font-semibold ${
+                          isDeclarationChecked ? "text-white" : "text-gray-500"
+                        }`}
+                      >
+                        Send Link
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleManagerSubmit("otp")}
+                    className={`flex-1 rounded-lg p-3 items-center ${
+                      isDeclarationChecked ? "bg-primary" : "bg-gray-300"
+                    }`}
+                    disabled={isSubmitting || !isDeclarationChecked}
+                  >
+                    {isSubmitting ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <Text
+                        className={`font-semibold ${
+                          isDeclarationChecked ? "text-white" : "text-gray-500"
+                        }`}
+                      >
+                        Send OTP
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
+  const renderCancelReasonModal = () => {
+    return (
+      <Modal
+        visible={showCancelReasonModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={handleCloseCancelModal}
+      >
+        <View className="flex-1 bg-black/80 justify-center items-center p-4">
+          <View className="bg-white rounded-lg p-6 mx-4 w-full max-w-sm">
+            <Text className="text-xl font-bold text-gray-800 mb-4 text-center">
+              Cancel Reason
+            </Text>
+
+            <Text className="text-sm text-gray-600 mb-6 text-center">
+              Please provide a reason for cancellation (max 100 characters)
+            </Text>
+
+            <TextInput
+              value={cancelReason}
+              onChangeText={(value) => setCancelReason(value)}
+              placeholder="Enter reason"
+              maxLength={100}
+              multiline
+              className="border border-gray-300 rounded-lg p-3 bg-white text-black mb-6 h-24"
+            />
+
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                onPress={handleCloseCancelModal}
+                className="flex-1 bg-gray-500 rounded-lg p-3 items-center"
+              >
+                <Text className="text-white font-semibold">Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() =>
+                  selectedActivity && handleCancelActivity(selectedActivity)
+                }
+                className={`flex-1 rounded-lg p-3 items-center ${
+                  cancelReason.trim() ? "bg-red-500" : "bg-gray-300"
+                }`}
+                disabled={!cancelReason.trim()}
+              >
+                <Text
+                  className={`font-semibold ${
+                    cancelReason.trim() ? "text-white" : "text-gray-500"
+                  }`}
+                >
+                  Submit
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   const renderFloatingActionButton = () => {
     const rotation = fabAnimation.interpolate({
       inputRange: [0, 1],
@@ -1010,11 +1547,11 @@ const MainDashboard = () => {
   return (
     <SafeAreaView
       className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
+      // style={{ paddingTop: statusBarHeight }}
     >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      {/* <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" /> */}
 
-      <CustomHeader showOnlyLogout={true} />
+      {/* <CustomHeader showOnlyLogout={true} /> */}
 
       <FlatList
         data={filteredChannels}
@@ -1085,6 +1622,8 @@ const MainDashboard = () => {
         </View>
       )}
       {renderRescheduleModal()}
+      {renderManagerSignoffModal()}
+      {renderCancelReasonModal()}
       {/* Floating Action Button */}
       {renderFloatingActionButton()}
     </SafeAreaView>

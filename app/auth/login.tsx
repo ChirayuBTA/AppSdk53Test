@@ -73,7 +73,7 @@ const LoginScreen = () => {
         router.replace("/dashboard");
       }
     } else if (role === "ALLIANCE_MANAGER") {
-      router.replace("/(screens)/MainDashboard");
+      router.replace("/(screens)/MainScreen");
     }
   }, [token, promoterId, activityLocId, loginImageId]);
 
