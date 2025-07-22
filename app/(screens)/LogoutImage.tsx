@@ -120,14 +120,36 @@ const LogoutImage = () => {
 
       const formData = new FormData();
 
-      // Use proper file structure for FormData
-      const imageFile = {
-        uri: image,
-        name: `logout_photo_${Date.now()}.jpg`,
-        type: "image/jpeg",
-      };
+      // Check if we're on web or mobile
+      const isWeb = typeof window !== "undefined" && window.HTMLInputElement;
 
-      formData.append("image", imageFile as any);
+      if (isWeb) {
+        // For web uploads, we need to handle file input differently
+        // If image is a blob URL or file object, convert it properly
+        if (image.startsWith("blob:")) {
+          // Convert blob URL to file
+          const response = await fetch(image);
+          const blob = await response.blob();
+          const file = new File([blob], `logout_photo_${Date.now()}.jpg`, {
+            type: blob.type || "image/jpeg",
+          });
+          formData.append("image", file);
+        } else {
+          // Handle other web cases - convert to blob if needed
+          const response = await fetch(image);
+          const blob = await response.blob();
+          formData.append("image", blob, `logout_photo_${Date.now()}.jpg`);
+        }
+      } else {
+        // For React Native mobile uploads
+        const imageFile = {
+          uri: image,
+          name: `logout_photo_${Date.now()}.jpg`,
+          type: "image/jpeg",
+        };
+        formData.append("image", imageFile as any);
+      }
+
       formData.append("promoterId", promoterId);
       formData.append("id", loginImageId);
       formData.append("activityCode", activityCode);
