@@ -1,22 +1,20 @@
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { formDataToObject } from "@/helper";
+import { getAuthValue, getLocValue } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  ScrollView,
   Text,
   TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-  ScrollView,
-  StatusBar,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../utils/api"; // Import API methods
-import CustomHeader from "@/components/CustomHeader";
-import { getAuthValue, getLocValue } from "@/utils/storage";
-import { formDataToObject } from "@/helper";
 
 const UploadImages = () => {
   const [images, setImages] = useState<string[]>([]); // Store multiple images
@@ -235,11 +233,7 @@ const UploadImages = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader />
-
+    <ScreenWrapper showScroll={false}>
       {/* Main Card */}
       <View className="bg-white mx-4 my-4 rounded-3xl shadow-md p-6">
         <View className="mx-4 my-4 rounded-3xl p-6">
@@ -318,7 +312,7 @@ const UploadImages = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

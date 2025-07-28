@@ -1,33 +1,30 @@
-import React, { useEffect, useState, useRef } from "react";
+import LocationPermissionModal from "@/components/LocationPermissionButton";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { formDataToObject } from "@/helper";
+import { getAuthValue, getLocValue } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import * as Application from "expo-application";
+import * as Device from "expo-device";
+import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { useRouter } from "expo-router";
+import React, { useEffect, useRef, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-  StatusBar,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-  Platform,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import * as Location from "expo-location";
-import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../../utils/api"; // Import API methods
-import { getAuthValue, getLocValue } from "@/utils/storage";
-import CustomHeader from "@/components/CustomHeader";
 import ViewShot from "react-native-view-shot";
-import { manipulateAsync, SaveFormat } from "expo-image-manipulator";
-import { Calendar, MapPin } from "lucide-react-native";
-import LocationPermissionModal from "@/components/LocationPermissionButton";
-import * as Device from "expo-device";
-import * as Application from "expo-application";
-import { formDataToObject } from "@/helper";
+import { api } from "../../utils/api"; // Import API methods
 
 const { width } = Dimensions.get("window");
 const PREVIEW_SIZE = width / 2 - 32; // Smaller for preview
@@ -709,11 +706,7 @@ const CreateScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader />
-
+    <ScreenWrapper showScroll={false}>
       {!locationPermissionGranted ? (
         <>
           <LocationPermissionModal
@@ -989,7 +982,7 @@ const CreateScreen = () => {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

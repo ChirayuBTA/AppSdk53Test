@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from "react";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
+import { X } from "lucide-react-native";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StatusBar,
-  SafeAreaView,
-  Platform,
-  Image,
-  Modal,
   ActivityIndicator,
   Alert,
+  FlatList,
+  Image,
+  Modal,
+  Platform,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
-import { getAuthValue, getLocValue } from "../../utils/storage";
-import { api } from "../../utils/api";
-import { format } from "date-fns";
-import CustomHeader from "@/components/CustomHeader";
 import ImageViewer from "react-native-image-zoom-viewer";
-import { X } from "lucide-react-native";
+import { api } from "../../utils/api";
+import { getAuthValue, getLocValue } from "../../utils/storage";
 
 interface EntryItem {
   id: string;
@@ -396,14 +395,7 @@ const DashboardScreen = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader />
-
+    <ScreenWrapper showScroll={false}>
       {/* Main Card */}
       <View className="bg-white mx-4 my-4 rounded-3xl shadow-md p-6">
         <View className="items-center mb-4">
@@ -582,7 +574,7 @@ const DashboardScreen = () => {
       >
         <Ionicons name="add" size={32} color="white" />
       </TouchableOpacity>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

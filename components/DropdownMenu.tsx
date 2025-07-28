@@ -1,10 +1,10 @@
-import React, { useState, useRef, ReactElement } from "react";
+import React, { ReactElement, useRef, useState } from "react";
 import {
-  View,
+  Dimensions,
   Modal,
   StyleSheet,
   TouchableWithoutFeedback,
-  Dimensions,
+  View,
 } from "react-native";
 
 interface DropdownMenuProps {
@@ -63,14 +63,18 @@ const DropdownMenu: React.FC<DropdownMenuProps> = ({
                   },
                 ]}
               >
-                {React.Children.map(children, (child) =>
-                  React.isValidElement(child)
-                    ? React.cloneElement(
-                        child as ReactElement<{ onClose: () => void }>,
-                        { onClose: handleClose }
-                      )
-                    : child
-                )}
+                {React.Children.map(children, (child) => {
+                  if (
+                    React.isValidElement(child) &&
+                    child.type !== React.Fragment
+                  ) {
+                    return React.cloneElement(
+                      child as ReactElement<{ onClose: () => void }>,
+                      { onClose: handleClose }
+                    );
+                  }
+                  return child;
+                })}
               </View>
             </View>
           </TouchableWithoutFeedback>

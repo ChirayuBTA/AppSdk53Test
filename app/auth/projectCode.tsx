@@ -1,23 +1,17 @@
-import React, { useState, useEffect } from "react";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { api } from "@/utils/api"; // Import API for project code verification
+import { getAuthValue, storeAuthData, storeLocData } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
-  ActivityIndicator,
-  Image,
+  View,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "@/utils/api"; // Import API for project code verification
-import { getAuthValue, storeAuthData, storeLocData } from "@/utils/storage";
-import CustomHeader from "@/components/CustomHeader"; // Import the CustomHeader component
 
 const ProjectCodeScreen = () => {
   // const { phoneNumber } = useLocalSearchParams();
@@ -130,137 +124,113 @@ const ProjectCodeScreen = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
+      {/* Content Section */}
+      <View className="px-6 pt-8 flex-1 justify-center">
+        {/* Remove the logo since it's now in the header */}
+        <Text className="text-2xl font-bold text-center mb-2 text-gray-800">
+          Enter Project Code
+        </Text>
+        <Text className="text-center text-gray-500 mb-8">
+          Please enter the 6-digit project code provided to you
+        </Text>
 
-      {/* Add CustomHeader here */}
-      <CustomHeader
-        showOnlyLogout={true}
-        showHome={false}
-        className="border-b border-gray-200"
-      />
+        {/* Project Code Input */}
+        <View className="mb-6">
+          <Text className="text-sm font-medium text-gray-600 mb-2 ml-1">
+            Project Code
+          </Text>
+          <View className="flex-row items-center border border-gray-300 rounded-xl px-4 py-3 bg-gray-50">
+            <TextInput
+              className="flex-1 text-lg text-black tracking-widest text-center"
+              keyboardType="numeric"
+              maxLength={6}
+              placeholder="Enter Project Code"
+              placeholderTextColor="#A0A0A0"
+              value={projectCode}
+              onChangeText={(text) =>
+                setProjectCode(text.replace(/[^0-9]/g, ""))
+              }
+              autoFocus
+            />
+            {projectCode.length > 0 && (
+              <TouchableOpacity onPress={() => setProjectCode("")}>
+                <Ionicons name="close-circle" size={22} color="#9ca3af" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-      >
-        <ScrollView
-          contentContainerStyle={{
-            flexGrow: 1,
-            justifyContent: "space-between",
-          }}
-          keyboardShouldPersistTaps="handled"
+        {/* Verify Project Code Button */}
+        <TouchableOpacity
+          className={`rounded-xl py-4 shadow-md ${
+            projectCode.length === 6
+              ? "bg-primary active:bg-primary"
+              : "bg-gray-300"
+          }`}
+          onPress={verifyProjectCode}
+          disabled={projectCode.length !== 6 || isLoading}
+          activeOpacity={0.8}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Verify Project Code"
         >
-          {/* Content Section */}
-          <View className="px-6 pt-8 flex-1 justify-center">
-            {/* Remove the logo since it's now in the header */}
-            <Text className="text-2xl font-bold text-center mb-2 text-gray-800">
-              Enter Project Code
+          {isLoading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text className="text-white text-center text-lg font-semibold">
+              Verify Project Code
             </Text>
-            <Text className="text-center text-gray-500 mb-8">
-              Please enter the 6-digit project code provided to you
-            </Text>
+          )}
+        </TouchableOpacity>
 
-            {/* Project Code Input */}
-            <View className="mb-6">
-              <Text className="text-sm font-medium text-gray-600 mb-2 ml-1">
-                Project Code
-              </Text>
-              <View className="flex-row items-center border border-gray-300 rounded-xl px-4 py-3 bg-gray-50">
-                <TextInput
-                  className="flex-1 text-lg text-black tracking-widest text-center"
-                  keyboardType="numeric"
-                  maxLength={6}
-                  placeholder="Enter Project Code"
-                  placeholderTextColor="#A0A0A0"
-                  value={projectCode}
-                  onChangeText={(text) =>
-                    setProjectCode(text.replace(/[^0-9]/g, ""))
-                  }
-                  autoFocus
-                />
-                {projectCode.length > 0 && (
-                  <TouchableOpacity onPress={() => setProjectCode("")}>
-                    <Ionicons name="close-circle" size={22} color="#9ca3af" />
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            {/* Verify Project Code Button */}
-            <TouchableOpacity
-              className={`rounded-xl py-4 shadow-md ${
-                projectCode.length === 6
-                  ? "bg-primary active:bg-primary"
-                  : "bg-gray-300"
-              }`}
-              onPress={verifyProjectCode}
-              disabled={projectCode.length !== 6 || isLoading}
-              activeOpacity={0.8}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Verify Project Code"
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-white text-center text-lg font-semibold">
-                  Verify Project Code
-                </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* Progress Indicator */}
-            <View className="flex-row justify-center mt-10 mb-6">
-              <View className="flex-row items-center space-x-2">
-                <View className="h-2 w-8 rounded-full bg-primary" />
-                <View className="h-2 w-8 rounded-full bg-primary" />
-                <View className="h-2 w-8 rounded-full bg-primary" />
-              </View>
-            </View>
+        {/* Progress Indicator */}
+        <View className="flex-row justify-center mt-10 mb-6">
+          <View className="flex-row items-center space-x-2">
+            <View className="h-2 w-8 rounded-full bg-primary" />
+            <View className="h-2 w-8 rounded-full bg-primary" />
+            <View className="h-2 w-8 rounded-full bg-primary" />
           </View>
+        </View>
+      </View>
 
-          {/* Footer Section */}
-          <View className="px-6 pb-8">
-            {/* Terms & Policy */}
-            <Text className="text-xs text-gray-500 text-center mb-6">
-              By continuing, you agree to our{" "}
-              <Text
-                className="text-primary font-medium"
-                onPress={() => router.push("/legals/TermsScreen")}
-              >
-                Terms of Services
-              </Text>{" "}
-              &{" "}
-              <Text
-                className="text-primary font-medium"
-                onPress={() => router.push("/legals/PrivacyAndPolicyScreen")}
-              >
-                Privacy Policy
-              </Text>
-            </Text>
+      {/* Footer Section */}
+      <View className="px-6 pb-8">
+        {/* Terms & Policy */}
+        <Text className="text-xs text-gray-500 text-center mb-6">
+          By continuing, you agree to our{" "}
+          <Text
+            className="text-primary font-medium"
+            onPress={() => router.push("/legals/TermsScreen")}
+          >
+            Terms of Services
+          </Text>{" "}
+          &{" "}
+          <Text
+            className="text-primary font-medium"
+            onPress={() => router.push("/legals/PrivacyAndPolicyScreen")}
+          >
+            Privacy Policy
+          </Text>
+        </Text>
 
-            {/* Support */}
-            <TouchableOpacity
-              className="flex-row justify-center items-center py-2"
-              activeOpacity={0.7}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Contact Support"
-              onPress={() => router.push("/legals/ContactSupport")}
-            >
-              <Ionicons name="help-circle-outline" size={18} color="#6b7280" />
-              <Text className="text-sm text-gray-500 ml-1">
-                Need help?{" "}
-                <Text className="text-primary font-medium">
-                  Contact Support
-                </Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+        {/* Support */}
+        <TouchableOpacity
+          className="flex-row justify-center items-center py-2"
+          activeOpacity={0.7}
+          accessible={true}
+          accessibilityRole="button"
+          accessibilityLabel="Contact Support"
+          onPress={() => router.push("/legals/ContactSupport")}
+        >
+          <Ionicons name="help-circle-outline" size={18} color="#6b7280" />
+          <Text className="text-sm text-gray-500 ml-1">
+            Need help?{" "}
+            <Text className="text-primary font-medium">Contact Support</Text>
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScreenWrapper>
   );
 };
 

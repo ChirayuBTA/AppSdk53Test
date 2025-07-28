@@ -155,7 +155,7 @@ const OtpScreen = () => {
   };
 
   return (
-    <ScreenWrapper showScroll={true}>
+    <ScreenWrapper headerProps={null} showScroll={true}>
       {/* Content Section */}
       <View className="px-6 pt-14 flex-1 justify-center">
         <View className="rounded-b-[50px] justify-center items-center mb-6">

@@ -971,7 +971,7 @@ const ExpensesScreen = () => {
   }
 
   return (
-    <ScreenWrapper showScroll={false}>
+    <ScreenWrapper headerProps={null} showScroll={false}>
       <View className="flex-1 bg-gray-50">
         <FlatList
           data={filteredExpenses}

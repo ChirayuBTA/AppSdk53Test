@@ -1626,7 +1626,7 @@ const MainDashboard = () => {
   };
 
   return (
-    <ScreenWrapper showScroll={false}>
+    <ScreenWrapper headerProps={null} showScroll={false}>
       <FlatList
         data={filteredChannels}
         renderItem={renderChannelItem}

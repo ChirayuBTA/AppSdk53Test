@@ -33,7 +33,7 @@ const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
       <StatusBar barStyle="dark-content" backgroundColor="white" />
 
       {/* Render header only if headerProps is provided */}
-      {headerProps && <CustomHeader {...headerProps} />}
+      {headerProps !== null && <CustomHeader {...(headerProps || {})} />}
 
       {showScroll ? (
         <KeyboardAwareScrollView

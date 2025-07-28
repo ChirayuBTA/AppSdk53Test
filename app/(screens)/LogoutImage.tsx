@@ -1,4 +1,4 @@
-import CustomHeader from "@/components/CustomHeader";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { formDataToObject } from "@/helper";
 import {
   clearAuthData,
@@ -14,12 +14,10 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../utils/api"; // Import API methods
 
 const LogoutImage = () => {
@@ -199,11 +197,7 @@ const LogoutImage = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-100">
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader />
-
+    <ScreenWrapper showScroll={false}>
       {/* Main Card */}
       <View className="bg-white mx-4 my-4 rounded-3xl shadow-md p-6">
         <View className="mx-4 my-4 rounded-3xl p-6">
@@ -287,7 +281,7 @@ const LogoutImage = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 
