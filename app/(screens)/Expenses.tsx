@@ -1,3 +1,4 @@
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
 import { format } from "date-fns";
 import Constants from "expo-constants";
@@ -16,7 +17,6 @@ import {
   PermissionsAndroid,
   Platform,
   RefreshControl,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -971,193 +971,195 @@ const ExpensesScreen = () => {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
-      <StatusBar barStyle="dark-content" backgroundColor="#F9FAFB" />
-
-      <FlatList
-        data={filteredExpenses}
-        renderItem={renderExpenseItem}
-        keyExtractor={(item) => item.id}
-        ListHeaderComponent={
-          <>
-            {renderTabBar()}
-            {renderSearchBar()}
-            {/* {filteredExpenses.length > 0 && renderSummaryHeader()} */}
-          </>
-        }
-        ListEmptyComponent={renderEmptyState}
-        ListFooterComponent={renderFooter}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            colors={["#3B82F6"]}
-            tintColor="#3B82F6"
-          />
-        }
-        onEndReached={loadMoreExpenses}
-        onEndReachedThreshold={0.1}
-        contentContainerStyle={{
-          paddingBottom: 120,
-          flexGrow: 1,
-        }}
-        showsVerticalScrollIndicator={false}
-      />
-
-      {/* Enhanced Floating Action Button */}
-      <TouchableOpacity
-        onPress={() => {
-          router.push("/(form)/AddExpense" as any);
-        }}
-        className="absolute bottom-8 right-6 bg-primary rounded-full w-16 h-16 items-center justify-center shadow-lg"
-        style={{
-          shadowColor: "#3B82F6",
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 8,
-        }}
-      >
-        <Ionicons name="add" size={28} color="white" />
-      </TouchableOpacity>
-
-      {/* Image Viewer Modal */}
-      <Modal
-        visible={modalVisible && !!selectedImage}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={{ flex: 1 }}>
-          {selectedImage && (
+    <ScreenWrapper showScroll={false}>
+      <View className="flex-1 bg-gray-50">
+        <FlatList
+          data={filteredExpenses}
+          renderItem={renderExpenseItem}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={
             <>
-              <ImageViewer
-                imageUrls={[{ url: selectedImage }]}
-                enableSwipeDown
-                onSwipeDown={() => setModalVisible(false)}
-                backgroundColor="rgba(0, 0, 0, 0.9)"
-                renderIndicator={() => <View />}
-              />
-              <TouchableOpacity
-                onPress={() => setModalVisible(false)}
-                style={{
-                  position: "absolute",
-                  top: 60,
-                  right: 20,
-                  backgroundColor: "rgba(0, 0, 0, 0.6)",
-                  padding: 10,
-                  borderRadius: 20,
-                }}
-              >
-                <Ionicons name="close" size={30} color="white" />
-              </TouchableOpacity>
+              {renderTabBar()}
+              {renderSearchBar()}
+              {/* {filteredExpenses.length > 0 && renderSummaryHeader()} */}
             </>
-          )}
-        </View>
-      </Modal>
+          }
+          ListEmptyComponent={renderEmptyState}
+          ListFooterComponent={renderFooter}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={["#3B82F6"]}
+              tintColor="#3B82F6"
+            />
+          }
+          onEndReached={loadMoreExpenses}
+          onEndReachedThreshold={0.1}
+          contentContainerStyle={{
+            paddingBottom: 120,
+            flexGrow: 1,
+          }}
+          showsVerticalScrollIndicator={false}
+        />
 
-      {/* Approval Comment Modal */}
-      <Modal
-        visible={approvalModalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setApprovalModalVisible(false)}
-      >
-        <View className="flex-1 bg-black/80 justify-center items-center p-4">
-          <View className="bg-white mx-4 rounded-2xl p-6 w-11/12 max-w-md">
-            {selectedExpense?.lastApprovalComment && (
+        {/* Enhanced Floating Action Button */}
+        <TouchableOpacity
+          onPress={() => {
+            router.push("/(form)/AddExpense" as any);
+          }}
+          className="absolute bottom-8 right-6 bg-primary rounded-full w-16 h-16 items-center justify-center shadow-lg"
+          style={{
+            shadowColor: "#3B82F6",
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+        >
+          <Ionicons name="add" size={28} color="white" />
+        </TouchableOpacity>
+
+        {/* Image Viewer Modal */}
+        <Modal
+          visible={modalVisible && !!selectedImage}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={{ flex: 1 }}>
+            {selectedImage && (
               <>
-                {/* Header */}
-                <View className="flex-row justify-between items-center mb-4">
-                  <Text className="text-lg font-bold text-gray-900">
-                    {selectedExpense?.lastApprovalComment.status ===
-                    "QUERY_RAISED"
-                      ? "Query Details"
-                      : "Rejected Details"}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => setApprovalModalVisible(false)}
-                  >
-                    <Ionicons name="close" size={24} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
+                <ImageViewer
+                  imageUrls={[{ url: selectedImage }]}
+                  enableSwipeDown
+                  onSwipeDown={() => setModalVisible(false)}
+                  backgroundColor="rgba(0, 0, 0, 0.9)"
+                  renderIndicator={() => <View />}
+                />
+                <TouchableOpacity
+                  onPress={() => setModalVisible(false)}
+                  style={{
+                    position: "absolute",
+                    top: 60,
+                    right: 20,
+                    backgroundColor: "rgba(0, 0, 0, 0.6)",
+                    padding: 10,
+                    borderRadius: 20,
+                  }}
+                >
+                  <Ionicons name="close" size={30} color="white" />
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </Modal>
 
-                {/* Approval Details */}
-                <View className="space-y-4 mb-6">
-                  {/* Approver Info */}
-                  <View>
-                    <Text className="text-gray-500 text-xs font-medium mb-1">
-                      FROM
+        {/* Approval Comment Modal */}
+        <Modal
+          visible={approvalModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setApprovalModalVisible(false)}
+        >
+          <View className="flex-1 bg-black/80 justify-center items-center p-4">
+            <View className="bg-white mx-4 rounded-2xl p-6 w-11/12 max-w-md">
+              {selectedExpense?.lastApprovalComment && (
+                <>
+                  {/* Header */}
+                  <View className="flex-row justify-between items-center mb-4">
+                    <Text className="text-lg font-bold text-gray-900">
+                      {selectedExpense?.lastApprovalComment.status ===
+                      "QUERY_RAISED"
+                        ? "Query Details"
+                        : "Rejected Details"}
                     </Text>
-                    <Text className="text-gray-900 text-sm font-semibold">
-                      {selectedExpense.lastApprovalComment.approver.name} (
-                      {selectedExpense.lastApprovalComment.role})
-                    </Text>
+                    <TouchableOpacity
+                      onPress={() => setApprovalModalVisible(false)}
+                    >
+                      <Ionicons name="close" size={24} color="#6B7280" />
+                    </TouchableOpacity>
                   </View>
 
-                  {/* Comment */}
-                  <View>
-                    <Text className="text-gray-500 text-xs font-medium mb-1">
-                      COMMENT
-                    </Text>
-                    <View className="bg-gray-50 rounded-lg p-3">
-                      <Text className="text-gray-900 text-sm leading-5">
-                        {selectedExpense.lastApprovalComment.comment}
+                  {/* Approval Details */}
+                  <View className="space-y-4 mb-6">
+                    {/* Approver Info */}
+                    <View>
+                      <Text className="text-gray-500 text-xs font-medium mb-1">
+                        FROM
+                      </Text>
+                      <Text className="text-gray-900 text-sm font-semibold">
+                        {selectedExpense.lastApprovalComment.approver.name} (
+                        {selectedExpense.lastApprovalComment.role})
+                      </Text>
+                    </View>
+
+                    {/* Comment */}
+                    <View>
+                      <Text className="text-gray-500 text-xs font-medium mb-1">
+                        COMMENT
+                      </Text>
+                      <View className="bg-gray-50 rounded-lg p-3">
+                        <Text className="text-gray-900 text-sm leading-5">
+                          {selectedExpense.lastApprovalComment.comment}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {/* Date */}
+                    <View>
+                      <Text className="text-gray-500 text-xs font-medium mb-1">
+                        DATE
+                      </Text>
+                      <Text className="text-gray-900 text-sm font-semibold">
+                        {format(
+                          new Date(
+                            selectedExpense.lastApprovalComment.createdAt
+                          ),
+                          "MMM d, yyyy 'at' h:mm a"
+                        )}
                       </Text>
                     </View>
                   </View>
 
-                  {/* Date */}
-                  <View>
-                    <Text className="text-gray-500 text-xs font-medium mb-1">
-                      DATE
-                    </Text>
-                    <Text className="text-gray-900 text-sm font-semibold">
-                      {format(
-                        new Date(selectedExpense.lastApprovalComment.createdAt),
-                        "MMM d, yyyy 'at' h:mm a"
-                      )}
-                    </Text>
-                  </View>
-                </View>
+                  {/* Action Buttons */}
+                  {selectedExpense?.lastApprovalComment.status ===
+                    "QUERY_RAISED" && (
+                    <View className="flex-row space-x-3 gap-2">
+                      <TouchableOpacity
+                        onPress={() => setApprovalModalVisible(false)}
+                        className="flex-1 bg-gray-100 py-3 px-4 rounded-xl"
+                      >
+                        <Text className="text-gray-700 font-semibold text-center">
+                          Close
+                        </Text>
+                      </TouchableOpacity>
 
-                {/* Action Buttons */}
-                {selectedExpense?.lastApprovalComment.status ===
-                  "QUERY_RAISED" && (
-                  <View className="flex-row space-x-3 gap-2">
-                    <TouchableOpacity
-                      onPress={() => setApprovalModalVisible(false)}
-                      className="flex-1 bg-gray-100 py-3 px-4 rounded-xl"
-                    >
-                      <Text className="text-gray-700 font-semibold text-center">
-                        Close
-                      </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      onPress={() => {
-                        setApprovalModalVisible(false);
-                        router.push({
-                          pathname: "/(form)/AddExpense",
-                          params: {
-                            expenseId: selectedExpense.id,
-                          },
-                        });
-                      }}
-                      className="flex-1 bg-blue-600 py-3 px-4 rounded-xl"
-                    >
-                      <Text className="text-white font-semibold text-center">
-                        Edit Expense
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </>
-            )}
+                      <TouchableOpacity
+                        onPress={() => {
+                          setApprovalModalVisible(false);
+                          router.push({
+                            pathname: "/(form)/AddExpense",
+                            params: {
+                              expenseId: selectedExpense.id,
+                            },
+                          });
+                        }}
+                        className="flex-1 bg-blue-600 py-3 px-4 rounded-xl"
+                      >
+                        <Text className="text-white font-semibold text-center">
+                          Edit Expense
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </>
+              )}
+            </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </ScreenWrapper>
   );
 };
 

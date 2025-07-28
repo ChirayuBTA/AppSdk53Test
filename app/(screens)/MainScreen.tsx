@@ -1,16 +1,15 @@
+import ScreenWrapper from "@/components/ScreenWrapper";
+import Constants from "expo-constants";
 import React, { useState } from "react";
 import {
-  View,
+  Platform,
+  StatusBar,
   Text,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  Platform,
+  View,
 } from "react-native";
-import Constants from "expo-constants";
-import MainDashboard from "./MainDashboard";
-import CustomHeader from "@/components/CustomHeader";
 import ExpensesScreen from "./Expenses";
+import MainDashboard from "./MainDashboard";
 
 const MainScreen = () => {
   const [activeTab, setActiveTab] = useState("activities");
@@ -33,14 +32,7 @@ const MainScreen = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader showOnlyLogout={true} />
-
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={false}>
       {/* Tab Header */}
       <View className="bg-white shadow-sm">
         <View className="flex-row mx-4">
@@ -78,7 +70,7 @@ const MainScreen = () => {
 
       {/* Tab Content */}
       <View className="flex-1">{renderContent()}</View>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

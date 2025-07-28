@@ -1,28 +1,29 @@
 import CustomHeader from "@/components/CustomHeader";
 import DynamicDropdown from "@/components/DynamicDropdown";
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  Platform,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import { formDataToObject } from "@/helper";
+import { api } from "@/utils/api";
+import { getAuthData } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { api } from "@/utils/api";
-import { formDataToObject } from "@/helper";
-import { getAuthData } from "@/utils/storage";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  Platform,
+  SafeAreaView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 interface UploadedFile {
   id: string;
@@ -122,6 +123,8 @@ const ActivityDetails = () => {
       console.log("Error: ", err);
     }
   };
+
+  const { height: screenHeight } = Dimensions.get("window");
 
   useEffect(() => {
     getStoredData(); // Get stored values on mount
@@ -474,14 +477,25 @@ const ActivityDetails = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
+      <StatusBar barStyle="dark-content" backgroundColor="white" />
 
+      {/* 🟢 FIXED: move header outside scroll */}
       <CustomHeader showOnlyLogout={true} />
-      <ScrollView className="flex-1 bg-white">
+
+      {/* 🔵 Scrollable area starts here */}
+      <KeyboardAwareScrollView
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: 100,
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraHeight={Platform.OS === "ios" ? 120 : 100}
+        extraScrollHeight={Platform.OS === "ios" ? 120 : 100}
+      >
+        {/* <ScrollView className="flex-1 bg-white"> */}
         <View className="p-6">
           <Text className="text-2xl font-bold text-primary mb-6">
             Activity Details
@@ -819,7 +833,8 @@ const ActivityDetails = () => {
             )}
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        {/* </ScrollView> */}
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 };

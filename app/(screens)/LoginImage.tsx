@@ -1,29 +1,28 @@
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  Alert,
-  ActivityIndicator,
-  StatusBar,
-  Platform,
-} from "react-native";
-import { useRouter } from "expo-router";
-import * as ImagePicker from "expo-image-picker";
-import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { api } from "../../utils/api"; // Import API methods
-import CustomHeader from "@/components/CustomHeader";
+import { formDataToObject } from "@/helper";
 import {
   getAuthData,
   getAuthValue,
   getLocValue,
   storeAuthData,
 } from "@/utils/storage";
-import { formDataToObject } from "@/helper";
-import * as Device from "expo-device";
+import { Ionicons } from "@expo/vector-icons";
 import * as Application from "expo-application";
+import * as Device from "expo-device";
+import * as ImagePicker from "expo-image-picker";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { api } from "../../utils/api"; // Import API methods
 
 const LoginImage = () => {
   const [image, setImage] = useState<string>("");

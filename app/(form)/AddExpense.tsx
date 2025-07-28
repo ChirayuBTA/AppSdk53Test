@@ -1,28 +1,27 @@
-import CustomHeader from "@/components/CustomHeader";
 import DynamicDropdown from "@/components/DynamicDropdown";
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  Platform,
-  ActivityIndicator,
-  Image,
-} from "react-native";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { formDataToObject } from "@/helper";
+import { api } from "@/utils/api";
+import { getAuthData } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { api } from "@/utils/api";
-import { getAuthData } from "@/utils/storage";
-import { Ionicons } from "@expo/vector-icons";
-import { formDataToObject } from "@/helper";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface DropdownItem {
   id: string;
@@ -694,14 +693,7 @@ const ExpenseForm = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader showOnlyLogout={true} />
-
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#f89f22" />
@@ -1048,7 +1040,7 @@ const ExpenseForm = () => {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

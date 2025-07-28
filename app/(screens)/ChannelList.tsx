@@ -1,23 +1,23 @@
-import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StatusBar,
-  SafeAreaView,
-  Platform,
-  TextInput,
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-} from "react-native";
-import { useRouter } from "expo-router";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
-import { getAuthValue } from "../../utils/storage";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Platform,
+  RefreshControl,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { api } from "../../utils/api";
-import CustomHeader from "@/components/CustomHeader";
+import { getAuthValue } from "../../utils/storage";
 
 interface ChannelActivityDetail {
   id: string;
@@ -79,6 +79,8 @@ const ChannelList = () => {
   const [userId, setUserId] = useState<string | null>(null);
 
   const router = useRouter();
+
+  const { height: screenHeight } = Dimensions.get("window");
 
   // Get status bar height
   const statusBarHeight =
@@ -294,14 +296,7 @@ const ChannelList = () => {
   );
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader showOnlyLogout={true} />
-
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={false}>
       {/* Header */}
       <View className="mx-4 my-4">
         <View className="bg-white rounded-3xl shadow-md p-6">
@@ -379,7 +374,7 @@ const ChannelList = () => {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

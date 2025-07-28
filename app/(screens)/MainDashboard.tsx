@@ -1,4 +1,5 @@
 import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { format } from "date-fns";
@@ -13,7 +14,6 @@ import {
   Modal,
   Platform,
   RefreshControl,
-  SafeAreaView,
   StatusBar,
   Text,
   TextInput,
@@ -1626,14 +1626,7 @@ const MainDashboard = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      // style={{ paddingTop: statusBarHeight }}
-    >
-      {/* <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" /> */}
-
-      {/* <CustomHeader showOnlyLogout={true} /> */}
-
+    <ScreenWrapper showScroll={false}>
       <FlatList
         data={filteredChannels}
         renderItem={renderChannelItem}
@@ -1717,7 +1710,7 @@ const MainDashboard = () => {
       {renderCancelReasonModal()}
       {/* Floating Action Button */}
       {renderFloatingActionButton()}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

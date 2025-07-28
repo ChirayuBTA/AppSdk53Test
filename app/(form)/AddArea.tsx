@@ -1,21 +1,19 @@
-import CustomHeader from "@/components/CustomHeader";
 import DynamicDropdown from "@/components/DynamicDropdown";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { api } from "@/utils/api";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Platform,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  Platform,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import Constants from "expo-constants";
-import { useRouter } from "expo-router";
-import { api } from "@/utils/api";
 
 interface DropdownItem {
   id: string;
@@ -119,64 +117,56 @@ const AddArea = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
+      <View className="p-6">
+        <Text className="text-2xl font-bold text-primary mb-6">
+          Add New Area
+        </Text>
 
-      <CustomHeader showOnlyLogout={true} />
-      <ScrollView className="flex-1 bg-white">
-        <View className="p-6">
-          <Text className="text-2xl font-bold text-primary mb-6">
-            Add New Area
+        {/* Area Name Input */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Area Name <Text className="text-red-500">*</Text>
           </Text>
-
-          {/* Area Name Input */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Area Name <Text className="text-red-500">*</Text>
-            </Text>
-            <TextInput
-              value={formData.areaName}
-              onChangeText={(value) => updateField("areaName", value)}
-              placeholder="Enter area name"
-              className="border border-gray-300 rounded-lg p-3 bg-white"
-              autoCapitalize="words"
-              autoCorrect={false}
-            />
-          </View>
-
-          {/* City Selection Dropdown */}
-          <DynamicDropdown
-            label="City"
-            placeholder="Select City"
-            isRequired={true}
-            selectedValue={formData.cityId}
-            selectedLabel={formData.cityName}
-            onSelect={handleCitySelect}
-            apiCall={api.getAllCities}
-            searchable={true}
-            pageSize={10}
-            noDataMessage="No cities available"
-            errorMessage="Failed to load cities. Please try again."
+          <TextInput
+            value={formData.areaName}
+            onChangeText={(value) => updateField("areaName", value)}
+            placeholder="Enter area name"
+            className="border border-gray-300 rounded-lg p-3 bg-white"
+            autoCapitalize="words"
+            autoCorrect={false}
           />
-
-          {/* Submit Button */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            className="bg-primary rounded-lg p-4 items-center mt-6"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text className="text-white font-semibold text-lg">Add Area</Text>
-            )}
-          </TouchableOpacity>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        {/* City Selection Dropdown */}
+        <DynamicDropdown
+          label="City"
+          placeholder="Select City"
+          isRequired={true}
+          selectedValue={formData.cityId}
+          selectedLabel={formData.cityName}
+          onSelect={handleCitySelect}
+          apiCall={api.getAllCities}
+          searchable={true}
+          pageSize={10}
+          noDataMessage="No cities available"
+          errorMessage="Failed to load cities. Please try again."
+        />
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          onPress={handleSubmit}
+          className="bg-primary rounded-lg p-4 items-center mt-6"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text className="text-white font-semibold text-lg">Add Area</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    </ScreenWrapper>
   );
 };
 

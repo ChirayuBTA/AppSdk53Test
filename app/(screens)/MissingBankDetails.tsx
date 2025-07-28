@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StatusBar,
-  SafeAreaView,
-  Platform,
-  ActivityIndicator,
-  Alert,
-  RefreshControl,
-} from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Platform,
+  RefreshControl,
+  StatusBar,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { api } from "../../utils/api";
-import CustomHeader from "@/components/CustomHeader";
 
 interface ChannelActivityDetail {
   id: string;
@@ -122,9 +121,8 @@ const MissingBankDetails = () => {
         isBankDetails: false, // Only fetch activities with missing bank details
       };
 
-      const response: ApiResponse = await api.getChannelActivityDetailsbyStatus(
-        query
-      );
+      const response: ApiResponse =
+        await api.getChannelActivityDetailsbyStatus(query);
       console.log("Missing bank details response:", response);
 
       if (response.success) {
@@ -302,14 +300,7 @@ const MissingBankDetails = () => {
   );
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader showOnlyLogout={true} />
-
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={false}>
       {/* Header */}
       <View className="mx-4 my-4">
         <View className="bg-white rounded-3xl shadow-md p-6">
@@ -361,7 +352,7 @@ const MissingBankDetails = () => {
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 

@@ -1,27 +1,15 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Alert,
-  Image,
-  StyleSheet,
-} from "react-native";
+import { clearAuthData, clearLocData, getAuthValue } from "@/utils/storage";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter, usePathname } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { LogOut } from "lucide-react-native";
-import {
-  clearAuthData,
-  clearLocData,
-  getLocData,
-  getAuthData,
-  getAuthValue,
-} from "@/utils/storage";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Alert, Image, StyleSheet, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import DropdownMenu from "./DropdownMenu";
-import { MenuTrigger } from "./MenuTrigger";
 import { MenuOption } from "./MenuOption";
+import { MenuTrigger } from "./MenuTrigger";
 
-interface CustomHeaderProps {
+export interface CustomHeaderProps {
   isLocationScreen?: boolean;
   isLegalScreen?: boolean;
   showOnlyLogout?: boolean;
@@ -36,6 +24,7 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   showHome = true,
   className,
 }) => {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const pathname = usePathname();
   const [userRole, setuserRole] = useState<string | null>(null);
@@ -187,7 +176,10 @@ const CustomHeader: React.FC<CustomHeaderProps> = ({
   }
 
   return (
-    <View style={styles.container} className={`${className}`}>
+    <View
+      style={[styles.container, { paddingTop: insets.top }]}
+      className={`${className}`}
+    >
       {/* Logo */}
       <View style={styles.logoContainer}>
         <Image

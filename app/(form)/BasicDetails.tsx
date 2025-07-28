@@ -1,34 +1,28 @@
-import CustomHeader from "@/components/CustomHeader";
+import LocationSelector from "@/components/Address";
 import DynamicDropdown from "@/components/DynamicDropdown";
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  Platform,
-  Image,
-  ActivityIndicator,
-} from "react-native";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { formDataToObject } from "@/helper";
+import { api } from "@/utils/api";
+import { GST_REGEX, PAN_REGEX, PHONE_REGEX } from "@/utils/regex";
+import { getAuthData, getLocData } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
 import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { api } from "@/utils/api";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
 import {
-  getAuthData,
-  getLocData,
-  storeAuthData,
-  storeLocData,
-} from "@/utils/storage";
-import { formDataToObject } from "@/helper";
-import LocationSelector from "@/components/Address";
-import { EMAIL_REGEX, PHONE_REGEX, PAN_REGEX, GST_REGEX } from "@/utils/regex";
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface UploadedFile {
   id: string;
@@ -766,243 +760,235 @@ const BasicDetails = () => {
   };
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
+      {/* <ScrollView className="flex-1 bg-white"> */}
+      <View className="p-6">
+        <Text className="text-2xl font-bold text-primary mb-6">
+          Channel Registration
+        </Text>
 
-      <CustomHeader showOnlyLogout={true} />
-      <ScrollView className="flex-1 bg-white">
-        <View className="p-6">
-          <Text className="text-2xl font-bold text-primary mb-6">
-            Channel Registration
+        {/* Channel Type Dropdown */}
+        <DynamicDropdown
+          label="Channel Type"
+          placeholder="Select Channel Type"
+          isRequired={true}
+          selectedValue={formData.channelTypeId}
+          selectedLabel={formData.channelTypeName}
+          onSelect={handleChannelTypeSelect}
+          apiCall={api.getAllChannelTypes}
+          searchable={true}
+          pageSize={10}
+          noDataMessage="No channel types available"
+          errorMessage="Failed to load channel types. Please try again."
+          maxHeight={320}
+        />
+
+        {/* Channel Name */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Channel Name (Legal Name) <Text className="text-red-500">*</Text>
           </Text>
+          <TextInput
+            value={formData.channelName}
+            onChangeText={(value) => updateField("channelName", value)}
+            placeholder="Enter legal name"
+            className={`border rounded-lg p-3 bg-white ${
+              validationErrors.channelName
+                ? "border-red-500"
+                : "border-gray-300"
+            }`}
+          />
+          {renderValidationError("channelName")}
+        </View>
 
-          {/* Channel Type Dropdown */}
-          <DynamicDropdown
-            label="Channel Type"
-            placeholder="Select Channel Type"
+        {/* Location Selector Component */}
+        <View className="mb-4">
+          <Text className="text-lg font-medium text-gray-800 mb-3">
+            Location Details
+          </Text>
+          <LocationSelector
+            value={locationData}
+            onChange={handleLocationChange}
             isRequired={true}
-            selectedValue={formData.channelTypeId}
-            selectedLabel={formData.channelTypeName}
-            onSelect={handleChannelTypeSelect}
-            apiCall={api.getAllChannelTypes}
+            addressLabel="Channel Address"
+            addressPlaceholder="Enter address where activity will be conducted"
+            showLabels={true}
+          />
+          {renderValidationError("channelAddress")}
+        </View>
+
+        {/* Location Link Field */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Location Link (Optional)
+          </Text>
+          <Text className="text-xs text-gray-600 mb-2">
+            Google Maps link, website URL, or any other location reference
+          </Text>
+          <TextInput
+            value={formData.locationLink}
+            onChangeText={(value) => updateField("locationLink", value)}
+            placeholder="https://maps.google.com/... or any location URL"
+            className={`border rounded-lg p-3 bg-white ${
+              validationErrors.locationLink
+                ? "border-red-500"
+                : "border-gray-300"
+            }`}
+          />
+          {renderValidationError("locationLink")}
+        </View>
+
+        {/* Location Photo Upload Section */}
+        {renderLocationPhotoUpload()}
+
+        {/* Area Selection Dropdown */}
+        <View className="mb-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="text-sm font-medium text-gray-700">
+              Area <Text className="text-red-500">*</Text>
+            </Text>
+          </View>
+
+          <DynamicDropdown
+            placeholder="Select Area"
+            selectedValue={formData.areaId}
+            selectedLabel={formData.areaName}
+            onSelect={handleAreaSelect}
+            apiCall={api.getAllAreas}
             searchable={true}
             pageSize={10}
-            noDataMessage="No channel types available"
-            errorMessage="Failed to load channel types. Please try again."
+            formatDisplayText={formatAreaDisplayText}
+            searchPlaceholder="Search areas..."
+            noDataMessage="No areas found"
+            errorMessage="Failed to load areas. Please try again."
             maxHeight={320}
           />
+          {renderValidationError("areaId")}
+        </View>
 
-          {/* Channel Name */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Channel Name (Legal Name) <Text className="text-red-500">*</Text>
+        {/* KYC Section */}
+        <View className="mb-6">
+          <Text className="text-sm font-medium text-gray-700 mb-3">
+            Channel KYC{" "}
+            <Text className="text-red-500">
+              * (At least one field mandatory)
+            </Text>
+          </Text>
+          {renderValidationError("kyc")}
+
+          {/* Registration Number */}
+          <View className="mb-3">
+            <Text className="text-sm text-gray-600 mb-2">
+              Channel Registration No.
             </Text>
             <TextInput
-              value={formData.channelName}
-              onChangeText={(value) => updateField("channelName", value)}
-              placeholder="Enter legal name"
+              value={formData.registrationNo}
+              onChangeText={(value) => updateField("registrationNo", value)}
+              placeholder="Enter legal entity registration number"
               className={`border rounded-lg p-3 bg-white ${
-                validationErrors.channelName
+                validationErrors.registrationNo
                   ? "border-red-500"
                   : "border-gray-300"
               }`}
             />
-            {renderValidationError("channelName")}
+            {renderValidationError("registrationNo")}
+            {renderKYCFileUpload(
+              "registrationNo",
+              formData.registrationNo,
+              "Registration"
+            )}
           </View>
 
-          {/* Location Selector Component */}
-          <View className="mb-4">
-            <Text className="text-lg font-medium text-gray-800 mb-3">
-              Location Details
-            </Text>
-            <LocationSelector
-              value={locationData}
-              onChange={handleLocationChange}
-              isRequired={true}
-              addressLabel="Channel Address"
-              addressPlaceholder="Enter address where activity will be conducted"
-              showLabels={true}
-            />
-            {renderValidationError("channelAddress")}
-          </View>
-
-          {/* Location Link Field */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Location Link (Optional)
-            </Text>
-            <Text className="text-xs text-gray-600 mb-2">
-              Google Maps link, website URL, or any other location reference
-            </Text>
+          {/* PAN */}
+          <View className="mb-3">
+            <Text className="text-sm text-gray-600 mb-2">Channel PAN</Text>
             <TextInput
-              value={formData.locationLink}
-              onChangeText={(value) => updateField("locationLink", value)}
-              placeholder="https://maps.google.com/... or any location URL"
-              className={`border rounded-lg p-3 bg-white ${
-                validationErrors.locationLink
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
-            />
-            {renderValidationError("locationLink")}
-          </View>
-
-          {/* Location Photo Upload Section */}
-          {renderLocationPhotoUpload()}
-
-          {/* Area Selection Dropdown */}
-          <View className="mb-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-medium text-gray-700">
-                Area <Text className="text-red-500">*</Text>
-              </Text>
-            </View>
-
-            <DynamicDropdown
-              placeholder="Select Area"
-              selectedValue={formData.areaId}
-              selectedLabel={formData.areaName}
-              onSelect={handleAreaSelect}
-              apiCall={api.getAllAreas}
-              searchable={true}
-              pageSize={10}
-              formatDisplayText={formatAreaDisplayText}
-              searchPlaceholder="Search areas..."
-              noDataMessage="No areas found"
-              errorMessage="Failed to load areas. Please try again."
-              maxHeight={320}
-            />
-            {renderValidationError("areaId")}
-          </View>
-
-          {/* KYC Section */}
-          <View className="mb-6">
-            <Text className="text-sm font-medium text-gray-700 mb-3">
-              Channel KYC{" "}
-              <Text className="text-red-500">
-                * (At least one field mandatory)
-              </Text>
-            </Text>
-            {renderValidationError("kyc")}
-
-            {/* Registration Number */}
-            <View className="mb-3">
-              <Text className="text-sm text-gray-600 mb-2">
-                Channel Registration No.
-              </Text>
-              <TextInput
-                value={formData.registrationNo}
-                onChangeText={(value) => updateField("registrationNo", value)}
-                placeholder="Enter legal entity registration number"
-                className={`border rounded-lg p-3 bg-white ${
-                  validationErrors.registrationNo
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-              />
-              {renderValidationError("registrationNo")}
-              {renderKYCFileUpload(
-                "registrationNo",
-                formData.registrationNo,
-                "Registration"
-              )}
-            </View>
-
-            {/* PAN */}
-            <View className="mb-3">
-              <Text className="text-sm text-gray-600 mb-2">Channel PAN</Text>
-              <TextInput
-                value={formData.pan}
-                onChangeText={(value) =>
-                  updateField("pan", value.toUpperCase())
-                }
-                placeholder="Enter PAN number (e.g., ABCDE1234F)"
-                maxLength={10}
-                className={`border rounded-lg p-3 bg-white ${
-                  validationErrors.pan ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {renderValidationError("pan")}
-              {renderKYCFileUpload("pan", formData.pan, "PAN")}
-            </View>
-
-            {/* GSTIN */}
-            <View className="mb-3">
-              <Text className="text-sm text-gray-600 mb-2">Channel GSTIN</Text>
-              <TextInput
-                value={formData.gstin}
-                onChangeText={(value) =>
-                  updateField("gstin", value.toUpperCase())
-                }
-                placeholder="Enter GSTIN number (15 characters)"
-                maxLength={15}
-                className={`border rounded-lg p-3 bg-white ${
-                  validationErrors.gstin ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {renderValidationError("gstin")}
-              {renderKYCFileUpload("gstin", formData.gstin, "GSTIN")}
-            </View>
-          </View>
-
-          {/* Manager Name */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Channel Manager Name <Text className="text-red-500">*</Text>
-            </Text>
-            <TextInput
-              value={formData.managerName}
-              onChangeText={(value) => updateField("managerName", value)}
-              placeholder="Person in charge of decision"
-              className={`border rounded-lg p-3 bg-white ${
-                validationErrors.managerName
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
-            />
-            {renderValidationError("managerName")}
-          </View>
-
-          {/* Manager Contact */}
-          <View className="mb-6">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Channel Manager Contact No <Text className="text-red-500">*</Text>
-            </Text>
-            <TextInput
-              value={formData.managerContact}
-              onChangeText={(value) => updateField("managerContact", value)}
-              placeholder="Enter 10-digit contact number"
-              keyboardType="phone-pad"
+              value={formData.pan}
+              onChangeText={(value) => updateField("pan", value.toUpperCase())}
+              placeholder="Enter PAN number (e.g., ABCDE1234F)"
               maxLength={10}
               className={`border rounded-lg p-3 bg-white ${
-                validationErrors.managerContact
-                  ? "border-red-500"
-                  : "border-gray-300"
+                validationErrors.pan ? "border-red-500" : "border-gray-300"
               }`}
             />
-            {renderValidationError("managerContact")}
+            {renderValidationError("pan")}
+            {renderKYCFileUpload("pan", formData.pan, "PAN")}
           </View>
 
-          {/* Submit Button */}
-          <TouchableOpacity
-            onPress={handleSubmit}
-            className="bg-primary rounded-lg p-4 items-center"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text className="text-white font-semibold text-lg">
-                Register Channel
-              </Text>
-            )}
-          </TouchableOpacity>
+          {/* GSTIN */}
+          <View className="mb-3">
+            <Text className="text-sm text-gray-600 mb-2">Channel GSTIN</Text>
+            <TextInput
+              value={formData.gstin}
+              onChangeText={(value) =>
+                updateField("gstin", value.toUpperCase())
+              }
+              placeholder="Enter GSTIN number (15 characters)"
+              maxLength={15}
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.gstin ? "border-red-500" : "border-gray-300"
+              }`}
+            />
+            {renderValidationError("gstin")}
+            {renderKYCFileUpload("gstin", formData.gstin, "GSTIN")}
+          </View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+
+        {/* Manager Name */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Channel Manager Name <Text className="text-red-500">*</Text>
+          </Text>
+          <TextInput
+            value={formData.managerName}
+            onChangeText={(value) => updateField("managerName", value)}
+            placeholder="Person in charge of decision"
+            className={`border rounded-lg p-3 bg-white ${
+              validationErrors.managerName
+                ? "border-red-500"
+                : "border-gray-300"
+            }`}
+          />
+          {renderValidationError("managerName")}
+        </View>
+
+        {/* Manager Contact */}
+        <View className="mb-6">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Channel Manager Contact No <Text className="text-red-500">*</Text>
+          </Text>
+          <TextInput
+            value={formData.managerContact}
+            onChangeText={(value) => updateField("managerContact", value)}
+            placeholder="Enter 10-digit contact number"
+            keyboardType="phone-pad"
+            maxLength={10}
+            className={`border rounded-lg p-3 bg-white ${
+              validationErrors.managerContact
+                ? "border-red-500"
+                : "border-gray-300"
+            }`}
+          />
+          {renderValidationError("managerContact")}
+        </View>
+
+        {/* Submit Button */}
+        <TouchableOpacity
+          onPress={handleSubmit}
+          className="bg-primary rounded-lg p-4 items-center"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text className="text-white font-semibold text-lg">
+              Register Channel
+            </Text>
+          )}
+        </TouchableOpacity>
+      </View>
+      {/* </ScrollView> */}
+    </ScreenWrapper>
   );
 };
 

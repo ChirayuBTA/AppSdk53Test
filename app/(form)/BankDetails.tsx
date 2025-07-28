@@ -1,4 +1,5 @@
 import CustomHeader from "@/components/CustomHeader";
+import ScreenWrapper from "@/components/ScreenWrapper";
 import { formDataToObject } from "@/helper";
 import { api } from "@/utils/api";
 import { getAuthData } from "@/utils/storage";
@@ -14,7 +15,6 @@ import {
   Modal,
   Platform,
   SafeAreaView,
-  ScrollView,
   StatusBar,
   Text,
   TextInput,
@@ -552,293 +552,283 @@ const BankDetails = () => {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-100"
-      style={{ paddingTop: statusBarHeight }}
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      <CustomHeader showOnlyLogout={true} />
-      <ScrollView className="flex-1 bg-white">
-        <View className="p-6">
-          <View className="flex-row justify-between items-center mb-6">
-            <Text className="text-2xl font-bold text-primary">
-              Bank Details
-            </Text>
-            {hasExistingData && isReadOnly && (
-              <TouchableOpacity
-                onPress={handleEdit}
-                className="bg-blue-500 px-4 py-2 rounded-lg"
-              >
-                <Text className="text-white font-medium">Edit</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-
+    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
+      <View className="p-6">
+        <View className="flex-row justify-between items-center mb-6">
+          <Text className="text-2xl font-bold text-primary">Bank Details</Text>
           {hasExistingData && isReadOnly && (
-            <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-              <Text className="text-green-800 font-medium">
-                ✓ Bank details are already configured for this channel
-              </Text>
-            </View>
+            <TouchableOpacity
+              onPress={handleEdit}
+              className="bg-blue-500 px-4 py-2 rounded-lg"
+            >
+              <Text className="text-white font-medium">Edit</Text>
+            </TouchableOpacity>
           )}
+        </View>
 
-          {/* Bank Name */}
+        {hasExistingData && isReadOnly && (
+          <View className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+            <Text className="text-green-800 font-medium">
+              ✓ Bank details are already configured for this channel
+            </Text>
+          </View>
+        )}
+
+        {/* Bank Name */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Bank Name <Text className="text-red-500">*</Text>
+          </Text>
+          <TextInput
+            value={formData.bankName}
+            onChangeText={(value) => updateField("bankName", value)}
+            placeholder="Enter bank name"
+            editable={!isReadOnly}
+            className={`border rounded-lg p-3 ${
+              isReadOnly
+                ? "border-gray-200 bg-gray-100 text-gray-600"
+                : "border-gray-300 bg-white"
+            }`}
+          />
+        </View>
+
+        {/* Bank Account Name */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Bank Account Name <Text className="text-red-500">*</Text>
+          </Text>
+          <Text className="text-xs text-gray-500 mb-2">
+            Should be of the channel
+          </Text>
+          <TextInput
+            value={formData.accountName}
+            onChangeText={(value) => updateField("accountName", value)}
+            placeholder="Enter account holder name"
+            editable={!isReadOnly}
+            className={`border rounded-lg p-3 ${
+              isReadOnly
+                ? "border-gray-200 bg-gray-100 text-gray-600"
+                : "border-gray-300 bg-white"
+            }`}
+          />
+        </View>
+
+        {/* Bank Account Number */}
+        <View className="mb-4">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Bank Account Number <Text className="text-red-500">*</Text>
+          </Text>
+          <Text className="text-xs text-gray-500 mb-2">
+            Should be of the channel
+          </Text>
+          <TextInput
+            value={formData.accountNumber}
+            onChangeText={(value) => updateField("accountNumber", value)}
+            placeholder="Enter account number"
+            keyboardType="numeric"
+            editable={!isReadOnly}
+            className={`border rounded-lg p-3 ${
+              isReadOnly
+                ? "border-gray-200 bg-gray-100 text-gray-600"
+                : "border-gray-300 bg-white"
+            }`}
+          />
+        </View>
+
+        {/* Confirm Bank Account Number - Only show in edit mode */}
+        {!isReadOnly && (
           <View className="mb-4">
             <Text className="text-sm font-medium text-gray-700 mb-2">
-              Bank Name <Text className="text-red-500">*</Text>
+              Confirm Bank Account Number{" "}
+              <Text className="text-red-500">*</Text>
             </Text>
             <TextInput
-              value={formData.bankName}
-              onChangeText={(value) => updateField("bankName", value)}
-              placeholder="Enter bank name"
-              editable={!isReadOnly}
-              className={`border rounded-lg p-3 ${
-                isReadOnly
-                  ? "border-gray-200 bg-gray-100 text-gray-600"
-                  : "border-gray-300 bg-white"
-              }`}
-            />
-          </View>
-
-          {/* Bank Account Name */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Bank Account Name <Text className="text-red-500">*</Text>
-            </Text>
-            <Text className="text-xs text-gray-500 mb-2">
-              Should be of the channel
-            </Text>
-            <TextInput
-              value={formData.accountName}
-              onChangeText={(value) => updateField("accountName", value)}
-              placeholder="Enter account holder name"
-              editable={!isReadOnly}
-              className={`border rounded-lg p-3 ${
-                isReadOnly
-                  ? "border-gray-200 bg-gray-100 text-gray-600"
-                  : "border-gray-300 bg-white"
-              }`}
-            />
-          </View>
-
-          {/* Bank Account Number */}
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Bank Account Number <Text className="text-red-500">*</Text>
-            </Text>
-            <Text className="text-xs text-gray-500 mb-2">
-              Should be of the channel
-            </Text>
-            <TextInput
-              value={formData.accountNumber}
-              onChangeText={(value) => updateField("accountNumber", value)}
-              placeholder="Enter account number"
-              keyboardType="numeric"
-              editable={!isReadOnly}
-              className={`border rounded-lg p-3 ${
-                isReadOnly
-                  ? "border-gray-200 bg-gray-100 text-gray-600"
-                  : "border-gray-300 bg-white"
-              }`}
-            />
-          </View>
-
-          {/* Confirm Bank Account Number - Only show in edit mode */}
-          {!isReadOnly && (
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Confirm Bank Account Number{" "}
-                <Text className="text-red-500">*</Text>
-              </Text>
-              <TextInput
-                value={formData.confirmAccountNumber}
-                onChangeText={(value) =>
-                  updateField("confirmAccountNumber", value)
-                }
-                placeholder="Re-enter account number"
-                keyboardType="numeric"
-                className="border border-gray-300 rounded-lg p-3 bg-white"
-              />
-              {formData.confirmAccountNumber &&
-                formData.accountNumber !== formData.confirmAccountNumber && (
-                  <Text className="text-red-500 text-xs mt-1">
-                    Account numbers do not match
-                  </Text>
-                )}
-            </View>
-          )}
-
-          {/* Bank IFSC */}
-          <View className="mb-6">
-            <Text className="text-sm font-medium text-gray-700 mb-2">
-              Bank IFSC Code <Text className="text-red-500">*</Text>
-            </Text>
-            <TextInput
-              value={formData.ifscCode}
+              value={formData.confirmAccountNumber}
               onChangeText={(value) =>
-                updateField("ifscCode", value.toUpperCase())
+                updateField("confirmAccountNumber", value)
               }
-              placeholder="Enter IFSC code"
-              maxLength={11}
-              editable={!isReadOnly}
-              className={`border rounded-lg p-3 ${
-                isReadOnly
-                  ? "border-gray-200 bg-gray-100 text-gray-600"
-                  : "border-gray-300 bg-white"
-              }`}
+              placeholder="Re-enter account number"
+              keyboardType="numeric"
+              className="border border-gray-300 rounded-lg p-3 bg-white"
             />
-            {!isReadOnly &&
-              formData.ifscCode &&
-              formData.ifscCode.length !== 11 && (
+            {formData.confirmAccountNumber &&
+              formData.accountNumber !== formData.confirmAccountNumber && (
                 <Text className="text-red-500 text-xs mt-1">
-                  IFSC code should be 11 characters
+                  Account numbers do not match
                 </Text>
               )}
           </View>
+        )}
 
-          {/* Cancelled Cheque Upload Section */}
-          <View className="mb-6">
-            <Text className="text-sm font-medium text-gray-700 mb-3">
-              Cancelled Cheque Copy
-              {/* <Text className="text-red-500">*</Text> */}
-            </Text>
-            <Text className="text-xs text-gray-500 mb-3">
-              Upload a clear image of cancelled cheque or PDF document
-            </Text>
-
-            {/* Upload Button - Only show in edit mode */}
-            {!isReadOnly && (
-              <TouchableOpacity
-                onPress={() => setShowFileOptions(!showFileOptions)}
-                className="border-2 border-dashed border-gray-300 rounded-lg p-4 items-center mb-4"
-              >
-                <Text className="text-gray-600 text-center">
-                  🏦 Upload Cancelled Cheque
-                </Text>
-                <Text className="text-gray-500 text-sm mt-1">
-                  Tap to select file
-                </Text>
-              </TouchableOpacity>
+        {/* Bank IFSC */}
+        <View className="mb-6">
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Bank IFSC Code <Text className="text-red-500">*</Text>
+          </Text>
+          <TextInput
+            value={formData.ifscCode}
+            onChangeText={(value) =>
+              updateField("ifscCode", value.toUpperCase())
+            }
+            placeholder="Enter IFSC code"
+            maxLength={11}
+            editable={!isReadOnly}
+            className={`border rounded-lg p-3 ${
+              isReadOnly
+                ? "border-gray-200 bg-gray-100 text-gray-600"
+                : "border-gray-300 bg-white"
+            }`}
+          />
+          {!isReadOnly &&
+            formData.ifscCode &&
+            formData.ifscCode.length !== 11 && (
+              <Text className="text-red-500 text-xs mt-1">
+                IFSC code should be 11 characters
+              </Text>
             )}
+        </View>
 
-            {/* File Options Modal */}
-            {showFileOptions && !isReadOnly && (
-              <View className="border border-gray-300 rounded-lg bg-white mb-4">
-                <TouchableOpacity
-                  onPress={handleImageFromCamera}
-                  className="p-4 border-b border-gray-200"
-                >
-                  <Text className="text-gray-900">📷 Take Photo</Text>
-                </TouchableOpacity>
+        {/* Cancelled Cheque Upload Section */}
+        <View className="mb-6">
+          <Text className="text-sm font-medium text-gray-700 mb-3">
+            Cancelled Cheque Copy
+            {/* <Text className="text-red-500">*</Text> */}
+          </Text>
+          <Text className="text-xs text-gray-500 mb-3">
+            Upload a clear image of cancelled cheque or PDF document
+          </Text>
 
-                <TouchableOpacity
-                  onPress={handleImageFromGallery}
-                  className="p-4 border-b border-gray-200"
-                >
-                  <Text className="text-gray-900">🖼️ Choose from Gallery</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={handlePDFUpload} className="p-4">
-                  <Text className="text-gray-900">📄 Upload PDF</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-
-            {/* Uploaded Files List */}
-            {uploadedFiles.length > 0 && (
-              <View className="mb-4">
-                <Text className="text-sm font-medium text-gray-700 mb-2">
-                  Uploaded Files ({uploadedFiles.length})
-                </Text>
-                {uploadedFiles.map((file) => (
-                  <View
-                    key={file.id}
-                    className="flex-row items-center bg-gray-50 p-3 rounded-lg mb-2"
-                  >
-                    {file.type === "image" ? (
-                      <Image
-                        source={{ uri: file.uri }}
-                        className="w-10 h-10 rounded mr-3"
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View className="w-10 h-10 bg-red-100 rounded mr-3 items-center justify-center">
-                        <Text className="text-red-600 text-xs font-bold">
-                          PDF
-                        </Text>
-                      </View>
-                    )}
-
-                    <View className="flex-1">
-                      <Text
-                        className="text-gray-900 text-sm font-medium"
-                        numberOfLines={1}
-                      >
-                        {file.name}
-                      </Text>
-                      {file.size && (
-                        <Text className="text-gray-500 text-xs">
-                          {formatFileSize(file.size)}
-                        </Text>
-                      )}
-                    </View>
-
-                    {!isReadOnly && (
-                      <TouchableOpacity
-                        onPress={() => removeFile(file.id)}
-                        className="p-2"
-                      >
-                        <Text className="text-red-500 text-lg">×</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Show existing file info in read-only mode */}
-            {isReadOnly && hasExistingData && (
-              <View className="bg-gray-50 p-3 rounded-lg">
-                <Text className="text-gray-600 text-sm">
-                  📄 Cancelled cheque document is already uploaded
-                </Text>
-              </View>
-            )}
-          </View>
-
-          {/* Action Buttons - Show save button in both read-only and edit modes */}
-          <View className="flex-row gap-3">
-            {/* Cancel button - only show when editing existing data */}
-            {hasExistingData && !isReadOnly && (
-              <TouchableOpacity
-                onPress={handleCancel}
-                className="flex-1 bg-gray-500 rounded-lg p-4 items-center"
-                disabled={isSubmitting}
-              >
-                <Text className="text-white font-semibold text-lg">Cancel</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Save button - always show, with appropriate styling */}
+          {/* Upload Button - Only show in edit mode */}
+          {!isReadOnly && (
             <TouchableOpacity
-              onPress={handleSaveClick}
-              className={`${
-                hasExistingData && !isReadOnly ? "flex-1" : "flex-1"
-              } bg-primary rounded-lg p-4 items-center`}
-              disabled={isSubmitting}
+              onPress={() => setShowFileOptions(!showFileOptions)}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-4 items-center mb-4"
             >
-              <Text className="text-white font-semibold text-lg">
-                {hasExistingData && isReadOnly
-                  ? "Save Bank Details"
-                  : hasExistingData
-                    ? "Update Bank Details"
-                    : "Save Bank Details"}
+              <Text className="text-gray-600 text-center">
+                🏦 Upload Cancelled Cheque
+              </Text>
+              <Text className="text-gray-500 text-sm mt-1">
+                Tap to select file
               </Text>
             </TouchableOpacity>
-          </View>
+          )}
+
+          {/* File Options Modal */}
+          {showFileOptions && !isReadOnly && (
+            <View className="border border-gray-300 rounded-lg bg-white mb-4">
+              <TouchableOpacity
+                onPress={handleImageFromCamera}
+                className="p-4 border-b border-gray-200"
+              >
+                <Text className="text-gray-900">📷 Take Photo</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleImageFromGallery}
+                className="p-4 border-b border-gray-200"
+              >
+                <Text className="text-gray-900">🖼️ Choose from Gallery</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={handlePDFUpload} className="p-4">
+                <Text className="text-gray-900">📄 Upload PDF</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* Uploaded Files List */}
+          {uploadedFiles.length > 0 && (
+            <View className="mb-4">
+              <Text className="text-sm font-medium text-gray-700 mb-2">
+                Uploaded Files ({uploadedFiles.length})
+              </Text>
+              {uploadedFiles.map((file) => (
+                <View
+                  key={file.id}
+                  className="flex-row items-center bg-gray-50 p-3 rounded-lg mb-2"
+                >
+                  {file.type === "image" ? (
+                    <Image
+                      source={{ uri: file.uri }}
+                      className="w-10 h-10 rounded mr-3"
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View className="w-10 h-10 bg-red-100 rounded mr-3 items-center justify-center">
+                      <Text className="text-red-600 text-xs font-bold">
+                        PDF
+                      </Text>
+                    </View>
+                  )}
+
+                  <View className="flex-1">
+                    <Text
+                      className="text-gray-900 text-sm font-medium"
+                      numberOfLines={1}
+                    >
+                      {file.name}
+                    </Text>
+                    {file.size && (
+                      <Text className="text-gray-500 text-xs">
+                        {formatFileSize(file.size)}
+                      </Text>
+                    )}
+                  </View>
+
+                  {!isReadOnly && (
+                    <TouchableOpacity
+                      onPress={() => removeFile(file.id)}
+                      className="p-2"
+                    >
+                      <Text className="text-red-500 text-lg">×</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Show existing file info in read-only mode */}
+          {isReadOnly && hasExistingData && (
+            <View className="bg-gray-50 p-3 rounded-lg">
+              <Text className="text-gray-600 text-sm">
+                📄 Cancelled cheque document is already uploaded
+              </Text>
+            </View>
+          )}
         </View>
-      </ScrollView>
+
+        {/* Action Buttons - Show save button in both read-only and edit modes */}
+        <View className="flex-row gap-3">
+          {/* Cancel button - only show when editing existing data */}
+          {hasExistingData && !isReadOnly && (
+            <TouchableOpacity
+              onPress={handleCancel}
+              className="flex-1 bg-gray-500 rounded-lg p-4 items-center"
+              disabled={isSubmitting}
+            >
+              <Text className="text-white font-semibold text-lg">Cancel</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Save button - always show, with appropriate styling */}
+          <TouchableOpacity
+            onPress={handleSaveClick}
+            className={`${
+              hasExistingData && !isReadOnly ? "flex-1" : "flex-1"
+            } bg-primary rounded-lg p-4 items-center`}
+            disabled={isSubmitting}
+          >
+            <Text className="text-white font-semibold text-lg">
+              {hasExistingData && isReadOnly
+                ? "Save Bank Details"
+                : hasExistingData
+                  ? "Update Bank Details"
+                  : "Save Bank Details"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Manager Details Modal */}
       <Modal
@@ -1027,7 +1017,7 @@ const BankDetails = () => {
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </ScreenWrapper>
   );
 };
 
