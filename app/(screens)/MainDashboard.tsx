@@ -275,6 +275,7 @@ const MainDashboard = () => {
       brand: item.brand,
       project: item.project,
       activity: item.activity,
+      cancelledReason: item.cancelledReason,
       ChannelTransaction: Array.isArray(item.ChannelTransaction)
         ? item.ChannelTransaction
         : [],
@@ -798,6 +799,15 @@ const MainDashboard = () => {
     }));
   };
 
+  const handleActivityClick = (item: any) => {
+    console.log("item---", item);
+
+    Alert.alert(
+      "Cancellation Reason",
+      item.cancelledReason || "No description"
+    );
+  };
+
   // Render tab bar with counts
   const renderTabBar = () => (
     <View className="mx-4 mb-4">
@@ -891,54 +901,63 @@ const MainDashboard = () => {
 
   // Render channel item
   const renderChannelItem = ({ item }: { item: ChannelItem }) => (
-    <View className="bg-white p-5 rounded-2xl shadow-lg mb-5 border border-gray-200">
-      {/* Header with Name and Status */}
-      <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-xl font-semibold text-gray-900 flex-1 pr-2">
-          {item.activity?.name || "Unnamed Activity"}
-        </Text>
+    <TouchableOpacity
+      className="bg-white mx-4 mb-5 rounded-2xl shadow-md border border-gray-100"
+      activeOpacity={0.7}
+      onPress={() => {
+        if (activeTab === "cancelled") {
+          handleActivityClick(item);
+        }
+      }}
+    >
+      <View className="bg-white p-5 rounded-2xl shadow-lg mb-5 border border-gray-200">
+        {/* Header with Name and Status */}
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-xl font-semibold text-gray-900 flex-1 pr-2">
+            {item.activity?.name || "Unnamed Activity"}
+          </Text>
 
-        {/* Status badge */}
-        <View
-          className={`px-3 py-1 rounded-full ${
-            activeTab === "upcoming"
-              ? "bg-blue-100"
-              : activeTab === "past"
-                ? "bg-green-100"
-                : "bg-red-100"
-          }`}
-        >
-          <Text
-            className={`text-xs font-semibold ${
+          {/* Status badge */}
+          <View
+            className={`px-3 py-1 rounded-full ${
               activeTab === "upcoming"
-                ? "text-blue-700"
+                ? "bg-blue-100"
                 : activeTab === "past"
-                  ? "text-green-700"
-                  : "text-red-700"
+                  ? "bg-green-100"
+                  : "bg-red-100"
             }`}
           >
-            {activeTab === "cancelled"
-              ? item.PaymentStatus
-              : activeTab === "past" && item.status === "PAYMENT_COMPLETED"
-                ? "Audit Pending"
-                : item.status}
-          </Text>
-        </View>
-      </View>
-
-      {/* Channel Details */}
-      <View className="bg-gray-50 px-4 py-3 rounded-xl space-y-3 gap-0.5">
-        {/* Event Date */}
-        <View className="flex-row items-center">
-          <Ionicons name="calendar" size={16} color="#6B7280" />
-          <Text className="text-gray-700 ml-2">
-            Event Date:{" "}
-            {format(new Date(item.activityPlannedDate), "MMM d, yyyy")}
-          </Text>
+            <Text
+              className={`text-xs font-semibold ${
+                activeTab === "upcoming"
+                  ? "text-blue-700"
+                  : activeTab === "past"
+                    ? "text-green-700"
+                    : "text-red-700"
+              }`}
+            >
+              {activeTab === "cancelled"
+                ? item.PaymentStatus
+                : activeTab === "past" && item.status === "PAYMENT_COMPLETED"
+                  ? "Audit Pending"
+                  : item.status}
+            </Text>
+          </View>
         </View>
 
-        {/* Time */}
-        {/* <View className="flex-row items-center">
+        {/* Channel Details */}
+        <View className="bg-gray-50 px-4 py-3 rounded-xl space-y-3 gap-0.5">
+          {/* Event Date */}
+          <View className="flex-row items-center">
+            <Ionicons name="calendar" size={16} color="#6B7280" />
+            <Text className="text-gray-700 ml-2">
+              Event Date:{" "}
+              {format(new Date(item.activityPlannedDate), "MMM d, yyyy")}
+            </Text>
+          </View>
+
+          {/* Time */}
+          {/* <View className="flex-row items-center">
           <Ionicons name="time-outline" size={16} color="#6B7280" />
           <Text className="text-gray-700 ml-2">
             Time: {format(new Date(item.activityFromDate), "hh:mm a")} -{" "}
@@ -946,26 +965,28 @@ const MainDashboard = () => {
           </Text>
         </View> */}
 
-        {/* Location */}
-        {item.activityLocation?.name && (
-          <View className="flex-row items-center">
-            <Ionicons name="location-outline" size={16} color="#6B7280" />
-            <Text className="text-gray-700 ml-2">
-              {item.activityLocation.name}
-            </Text>
-          </View>
-        )}
+          {/* Location */}
+          {item.activityLocation?.name && (
+            <View className="flex-row items-center">
+              <Ionicons name="location-outline" size={16} color="#6B7280" />
+              <Text className="text-gray-700 ml-2">
+                {item.activityLocation.name}
+              </Text>
+            </View>
+          )}
 
-        {/* Brand */}
-        {item.brand?.name && (
-          <View className="flex-row items-center">
-            <Ionicons name="business-outline" size={16} color="#6B7280" />
-            <Text className="text-gray-700 ml-2">Brand: {item.brand.name}</Text>
-          </View>
-        )}
+          {/* Brand */}
+          {item.brand?.name && (
+            <View className="flex-row items-center">
+              <Ionicons name="business-outline" size={16} color="#6B7280" />
+              <Text className="text-gray-700 ml-2">
+                Brand: {item.brand.name}
+              </Text>
+            </View>
+          )}
 
-        {/* Project */}
-        {/* {item.project?.name && (
+          {/* Project */}
+          {/* {item.project?.name && (
           <View className="flex-row items-center">
             <Ionicons name="folder-outline" size={16} color="#6B7280" />
             <Text className="text-gray-700 ml-2">
@@ -974,105 +995,110 @@ const MainDashboard = () => {
           </View>
         )} */}
 
-        {/* UTR */}
-        {item.ChannelTransaction?.[0]?.UTR && (
-          <View className="flex-row items-center">
-            <Ionicons name="receipt-outline" size={16} color="#6B7280" />
-            <Text className="text-gray-700 ml-2">
-              UTR: {item?.ChannelTransaction?.[0]?.UTR}
-            </Text>
-          </View>
-        )}
+          {/* UTR */}
+          {item.ChannelTransaction?.[0]?.UTR && (
+            <View className="flex-row items-center">
+              <Ionicons name="receipt-outline" size={16} color="#6B7280" />
+              <Text className="text-gray-700 ml-2">
+                UTR: {item?.ChannelTransaction?.[0]?.UTR}
+              </Text>
+            </View>
+          )}
 
-        {/* Created Date */}
-        {/* <View className="flex-row items-center">
+          {/* Created Date */}
+          {/* <View className="flex-row items-center">
           <Ionicons name="calendar-outline" size={16} color="#6B7280" />
           <Text className="text-gray-700 ml-2">
             Created: {format(new Date(item.createdDate), "MMM d, yyyy")}
           </Text>
         </View> */}
 
-        {/* Revenue */}
-        {item.revenue > 0 && (
-          <View className="flex-row items-center">
-            <Ionicons name="cash-outline" size={16} color="#6B7280" />
-            <Text className="text-gray-700 ml-2">
-              Revenue: ₹{item.revenue.toLocaleString()}
-            </Text>
+          {/* Revenue */}
+          {item.revenue > 0 && (
+            <View className="flex-row items-center">
+              <Ionicons name="cash-outline" size={16} color="#6B7280" />
+              <Text className="text-gray-700 ml-2">
+                Revenue: ₹{item.revenue.toLocaleString()}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Actions */}
+        {activeTab === "upcoming" && (
+          <View
+            className={`flex-row space-x-4 ${
+              item.status === "SIGNOFF_PENDING" ? "gap-3" : "gap-2"
+            } mt-5`}
+          >
+            {/* Left Section: Reschedule and Sign Off */}
+            <View
+              className={`flex-row ${
+                item.status === "SIGNOFF_PENDING" ? "w-5/6 gap-2" : "w-5/6"
+              }`}
+            >
+              {/* Reschedule Button */}
+              <TouchableOpacity
+                onPress={() => openRescheduleModal(item)}
+                className={`${
+                  item.status === "SIGNOFF_PENDING" ? "w-1/2" : "flex-1"
+                } bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow`}
+              >
+                <Ionicons name="calendar-outline" size={18} color="white" />
+                <Text className="text-white font-semibold ml-2">
+                  Reschedule
+                </Text>
+              </TouchableOpacity>
+
+              {/* Sign Off Button */}
+              {item.status === "SIGNOFF_PENDING" && (
+                <TouchableOpacity
+                  onPress={() => handleSignOff(item)}
+                  className="w-1/2 bg-green-600 rounded-xl py-3 flex-row items-center justify-center shadow"
+                >
+                  <Ionicons
+                    name="checkmark-done-outline"
+                    size={18}
+                    color="white"
+                  />
+                  <Text className="text-white font-semibold ml-2">
+                    Request Sign Off
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Right Section: Cancel Button */}
+            <View className="w-1/6">
+              <TouchableOpacity
+                onPress={() => openCancelReasonModal(item)}
+                disabled={item.status === "PAYMENT_PENDING"}
+                className={`flex-1 rounded-xl py-3 flex-row items-center justify-center shadow ${
+                  item.status === "PAYMENT_PENDING"
+                    ? "bg-gray-400"
+                    : "bg-red-600"
+                }`}
+              >
+                <Ionicons name="close-circle-outline" size={18} color="white" />
+              </TouchableOpacity>
+            </View>
           </View>
         )}
-      </View>
 
-      {/* Actions */}
-      {activeTab === "upcoming" && (
-        <View
-          className={`flex-row space-x-4 ${
-            item.status === "SIGNOFF_PENDING" ? "gap-3" : "gap-2"
-          } mt-5`}
-        >
-          {/* Left Section: Reschedule and Sign Off */}
-          <View
-            className={`flex-row ${
-              item.status === "SIGNOFF_PENDING" ? "w-5/6 gap-2" : "w-5/6"
-            }`}
-          >
-            {/* Reschedule Button */}
+        {/* Actions for past tab - only show reschedule if status is not completed */}
+        {activeTab === "past" && item.status !== "COMPLETED" && (
+          <View className="flex-row mt-5">
             <TouchableOpacity
               onPress={() => openRescheduleModal(item)}
-              className={`${
-                item.status === "SIGNOFF_PENDING" ? "w-1/2" : "flex-1"
-              } bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow`}
+              className="flex-1 bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow"
             >
               <Ionicons name="calendar-outline" size={18} color="white" />
               <Text className="text-white font-semibold ml-2">Reschedule</Text>
             </TouchableOpacity>
-
-            {/* Sign Off Button */}
-            {item.status === "SIGNOFF_PENDING" && (
-              <TouchableOpacity
-                onPress={() => handleSignOff(item)}
-                className="w-1/2 bg-green-600 rounded-xl py-3 flex-row items-center justify-center shadow"
-              >
-                <Ionicons
-                  name="checkmark-done-outline"
-                  size={18}
-                  color="white"
-                />
-                <Text className="text-white font-semibold ml-2">
-                  Request Sign Off
-                </Text>
-              </TouchableOpacity>
-            )}
           </View>
-
-          {/* Right Section: Cancel Button */}
-          <View className="w-1/6">
-            <TouchableOpacity
-              onPress={() => openCancelReasonModal(item)}
-              disabled={item.status === "PAYMENT_PENDING"}
-              className={`flex-1 rounded-xl py-3 flex-row items-center justify-center shadow ${
-                item.status === "PAYMENT_PENDING" ? "bg-gray-400" : "bg-red-600"
-              }`}
-            >
-              <Ionicons name="close-circle-outline" size={18} color="white" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Actions for past tab - only show reschedule if status is not completed */}
-      {activeTab === "past" && item.status !== "COMPLETED" && (
-        <View className="flex-row mt-5">
-          <TouchableOpacity
-            onPress={() => openRescheduleModal(item)}
-            className="flex-1 bg-blue-600 rounded-xl py-3 flex-row items-center justify-center shadow"
-          >
-            <Ionicons name="calendar-outline" size={18} color="white" />
-            <Text className="text-white font-semibold ml-2">Reschedule</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+        )}
+      </View>
+    </TouchableOpacity>
   );
 
   // Render empty state
