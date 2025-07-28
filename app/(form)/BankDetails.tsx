@@ -1,26 +1,26 @@
 import CustomHeader from "@/components/CustomHeader";
-import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-  SafeAreaView,
-  StatusBar,
-  Platform,
-  Image,
-  ActivityIndicator,
-  Modal,
-} from "react-native";
+import { formDataToObject } from "@/helper";
+import { api } from "@/utils/api";
+import { getAuthData } from "@/utils/storage";
 import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { formDataToObject } from "@/helper";
-import { api } from "@/utils/api";
-import { getAuthData, getLocData } from "@/utils/storage";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 interface UploadedFile {
   id: string;

@@ -1,28 +1,27 @@
-import React, { useState, useEffect, useCallback } from "react";
+import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { format } from "date-fns";
+import Constants from "expo-constants";
+import { useRouter } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StatusBar,
-  SafeAreaView,
-  Platform,
-  TextInput,
   ActivityIndicator,
   Alert,
-  RefreshControl,
   Animated,
+  FlatList,
   Modal,
+  Platform,
+  RefreshControl,
+  SafeAreaView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import Constants from "expo-constants";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import { getAuthValue } from "../../utils/storage";
 import { api } from "../../utils/api";
-import { format } from "date-fns";
-import CustomHeader from "@/components/CustomHeader";
-import AnalyticsDashboard from "@/components/AnalyticsDashboard";
+import { getAuthValue } from "../../utils/storage";
 
 interface ChannelStats {
   totalChannels: number;
@@ -84,6 +83,9 @@ interface ChannelItem {
 
 interface ApiResponse {
   success: boolean;
+  currentPage: number;
+  totalPages: number;
+  totalRecords: number;
   data: any[];
   meta: {
     upcoming: number;
@@ -171,6 +173,15 @@ const MainDashboard = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [isResendingOTP, setIsResendingOTP] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [hasNextPage, setHasNextPage] = useState(false);
+  const [hasPreviousPage, setHasPreviousPage] = useState(false);
+  const [itemsPerPage] = useState(10);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const router = useRouter();
   const currentDate = format(new Date(), "EEEE, MMMM d, yyyy");
@@ -292,17 +303,28 @@ const MainDashboard = () => {
   // Fetch channels from API with search parameter
   const fetchChannels = async (
     channelType = activeTab,
-    searchTerm = searchQuery
+    searchTerm = searchQuery,
+    page = currentPage,
+    append = false // New parameter to handle load more
   ) => {
     if (!userId) return;
 
-    setLoading(true);
+    // Set appropriate loading state
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
+
     setError(null);
 
     try {
       // Prepare API parameters
       const apiParams: any = {
+        userId: userId,
         tab: channelType,
+        page: page.toString(),
+        limit: itemsPerPage.toString(),
       };
 
       // Add search parameter if search term exists
@@ -316,8 +338,22 @@ const MainDashboard = () => {
       if (response.success) {
         const transformedData = transformApiData(response.data);
 
-        setChannels(transformedData);
-        setFilteredChannels(transformedData);
+        // If append is true (for load more), append to existing data
+        if (append && page > 1) {
+          setChannels((prev) => [...prev, ...transformedData]);
+          setFilteredChannels((prev) => [...prev, ...transformedData]);
+        } else {
+          // Replace data (for initial load or tab change)
+          setChannels(transformedData);
+          setFilteredChannels(transformedData);
+        }
+
+        // Update pagination state
+        setCurrentPage(response.currentPage || page);
+        setTotalPages(response.totalPages || 1);
+        setTotalRecords(response.totalRecords || 0);
+        setHasNextPage(response.currentPage < response.totalPages || false);
+        setHasPreviousPage(response.currentPage > 1 || false);
 
         // Update tab counts
         setTabCounts(response.meta);
@@ -332,6 +368,7 @@ const MainDashboard = () => {
       Alert.alert("Error", "Failed to fetch channels. Please try again.");
     } finally {
       setLoading(false);
+      setLoadingMore(false);
       setRefreshing(false);
     }
   };
@@ -341,14 +378,16 @@ const MainDashboard = () => {
     if (tabKey !== activeTab) {
       setActiveTab(tabKey);
       setSearchQuery(""); // Reset search when changing tabs
-      fetchChannels(tabKey, "");
+      setCurrentPage(1); // Reset pagination
+      fetchChannels(tabKey, "", 1, false);
     }
   };
 
   // Initial data fetch
   useEffect(() => {
     if (userId) {
-      fetchChannels();
+      setCurrentPage(1); // Ensure we start from page 1
+      fetchChannels(activeTab, "", 1, false);
     }
   }, [userId]);
 
@@ -361,6 +400,7 @@ const MainDashboard = () => {
   const handleSearch = useCallback(
     (text: string) => {
       setSearchQuery(text);
+      setCurrentPage(1); // Reset to first page when searching
 
       // Clear existing timeout
       if (searchTimeout) {
@@ -369,7 +409,7 @@ const MainDashboard = () => {
 
       // Set new timeout for debounced search
       const newTimeout = setTimeout(() => {
-        fetchChannels(activeTab, text);
+        fetchChannels(activeTab, text, 1, false);
       }, 500); // 500ms debounce delay
 
       setSearchTimeout(newTimeout);
@@ -386,11 +426,26 @@ const MainDashboard = () => {
     };
   }, [searchTimeout]);
 
+  // Handle Load more
+  const handleLoadMore = () => {
+    if (hasNextPage && !loading && !loadingMore) {
+      const nextPage = currentPage + 1;
+      fetchChannels(activeTab, searchQuery, nextPage, true);
+    }
+  };
+
+  // Function to handle scroll end reached
+  const onEndReached = () => {
+    handleLoadMore();
+  };
+
   // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     setSearchQuery("");
-    fetchChannels(activeTab, "");
+    setCurrentPage(1); // Reset pagination
+    setLoadingMore(false); // Reset loading more state
+    fetchChannels(activeTab, "", 1, false);
   };
 
   // Add this handler to receive analytics data changes
@@ -789,6 +844,29 @@ const MainDashboard = () => {
     </View>
   );
 
+  const renderLoadMoreFooter = () => {
+    if (loadingMore) {
+      return (
+        <View className="py-4 items-center">
+          <View className="flex-row items-center">
+            <ActivityIndicator size="small" color="#3B82F6" />
+            <Text className="text-gray-500 ml-2">Loading more...</Text>
+          </View>
+        </View>
+      );
+    }
+
+    if (!hasNextPage && filteredChannels.length > 0) {
+      return (
+        <View className="py-4 items-center">
+          <Text className="text-gray-500 text-sm">No more items to load</Text>
+        </View>
+      );
+    }
+
+    return null;
+  };
+
   // Render channel stats cards
   const renderStatsCards = () => (
     <View className="mx-4 my-4">
@@ -804,7 +882,10 @@ const MainDashboard = () => {
       </View> */}
 
       {/* Analytics Dashboard */}
-      <AnalyticsDashboard onDataChange={handleAnalyticsDataChange} />
+      <AnalyticsDashboard
+        userId={userId}
+        onDataChange={handleAnalyticsDataChange}
+      />
     </View>
   );
 
@@ -1584,8 +1665,10 @@ const MainDashboard = () => {
                 {/* Results count */}
                 <View className="flex-row justify-between items-center mt-3">
                   <Text className="text-gray-600">
-                    Showing {filteredChannels.length} of {tabCounts[activeTab]}{" "}
+                    Showing {filteredChannels.length} of {totalRecords}{" "}
                     {activeTab} channels
+                    {totalPages > 1 &&
+                      ` (Page ${currentPage} of ${totalPages})`}
                   </Text>
                   {searchQuery && (
                     <Text className="text-blue-600 text-sm">
@@ -1598,6 +1681,7 @@ const MainDashboard = () => {
           </>
         }
         ListEmptyComponent={!loading ? renderEmptyState : null}
+        ListFooterComponent={renderLoadMoreFooter}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -1610,6 +1694,13 @@ const MainDashboard = () => {
           flexGrow: 1,
         }}
         showsVerticalScrollIndicator={false}
+        // Infinite scroll properties
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.1} // Trigger when 10% from bottom
+        removeClippedSubviews={true} // Optimize performance
+        maxToRenderPerBatch={10} // Render 10 items per batch
+        windowSize={10} // Keep 10 screens worth of items in memory
+        initialNumToRender={10} // Render 10 items initially
       />
 
       {/* Loading overlay */}

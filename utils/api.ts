@@ -14,7 +14,7 @@ import {
   IVerifyManagerOTPRequestBody,
   IVerifyOTPRequestBody,
   IVerifyPromoBody,
-} from "@/lib/types";
+} from "@/types";
 
 export const api = {
   sendOTP: async function (body: ISendOTPRequestBody) {
@@ -394,5 +394,66 @@ export const api = {
       headers,
     };
     return fetch(`${apiUrl}/soc/verify-otp`, reqOptions).then(handleResponse);
+  },
+  getAllNatureOfExpense: async function (query: any) {
+    const headers = await authHeaders();
+    const reqOptions = {
+      headers,
+      credentials: "include" as RequestCredentials,
+      cache: "no-store" as RequestCache,
+    };
+    return fetch(
+      `${apiUrl}/expenseApp/getNatureOfExpense?${queryString(query)}`,
+      reqOptions
+    ).then(handleResponse);
+  },
+  addExpense: async function (body: FormData) {
+    const headers = await formHeaders();
+    const reqOptions = {
+      method: "POST",
+      body,
+      credentials: "include" as RequestCredentials,
+      headers,
+    };
+    return fetch(`${apiUrl}/expenseApp/addExpense`, reqOptions).then(
+      handleResponse
+    );
+  },
+  getExpensesByTab: async function (query: any) {
+    const headers = await authHeaders();
+    const reqOptions = {
+      headers,
+      credentials: "include" as RequestCredentials,
+      cache: "no-store" as RequestCache,
+    };
+    return fetch(
+      `${apiUrl}/expenseApp/getExpensesByTab?${queryString(query)}`,
+      reqOptions
+    ).then(handleResponse);
+  },
+  getExpensesById: async function (id: string, query: any) {
+    const headers = await authHeaders();
+    const reqOptions = {
+      headers,
+      credentials: "include" as RequestCredentials,
+      cache: "no-store" as RequestCache,
+    };
+    return fetch(
+      `${apiUrl}/expenseApp/${id}?${queryString(query)}`,
+      reqOptions
+    ).then(handleResponse);
+  },
+  updateCorrectedExpenseForm: async function (body: FormData) {
+    const headers = await formHeaders();
+    const reqOptions = {
+      method: "PATCH",
+      body,
+      credentials: "include" as RequestCredentials,
+      headers,
+    };
+    return fetch(
+      `${apiUrl}/expenseApp/updateCorrectedExpenseForm`,
+      reqOptions
+    ).then(handleResponse);
   },
 };

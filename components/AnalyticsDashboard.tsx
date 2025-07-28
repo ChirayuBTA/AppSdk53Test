@@ -47,6 +47,7 @@ interface AnalyticsDashboardProps {
   defaultOpen?: boolean;
   title?: string;
   description?: string;
+  userId: string | null;
 }
 
 interface ApiDataItem {
@@ -60,6 +61,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   defaultOpen = false,
   title = "Analytics Dashboard",
   description = "Track your performance metrics",
+  userId,
 }) => {
   const [selectedMetric, setSelectedMetric] = useState("channels");
   const [selectedPeriod, setSelectedPeriod] = useState("last7days");
@@ -234,6 +236,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       const typeParam = metric === "channels" ? "channel" : "activity";
 
       const response = await api.getBarGraphData({
+        userId,
         range: period,
         type: typeParam,
       });

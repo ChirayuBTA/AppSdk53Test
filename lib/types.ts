@@ -1,31 +1,30 @@
-export interface ISendOTPRequestBody {
+interface ISendOTPRequestBody {
   phone: string;
 }
 
-export interface IVerifyOTPRequestBody extends ISendOTPRequestBody {
+interface IVerifyOTPRequestBody extends ISendOTPRequestBody {
   otp: string;
 }
-export interface IVerifyPromoBody {
+interface IVerifyPromoBody {
   phone: string;
   promoCode: string;
   promoterId: string;
   userId: string;
 }
-export interface ICreateAreaBody {
+interface ICreateAreaBody {
   name: string;
   cityId: string;
 }
-export interface ISendManagerOTPRequestBody {
+interface ISendManagerOTPRequestBody {
   phone: string;
   id: string;
 }
 
-export interface IVerifyManagerOTPRequestBody
-  extends ISendManagerOTPRequestBody {
+interface IVerifyManagerOTPRequestBody extends ISendManagerOTPRequestBody {
   otp: string;
 }
 
-export interface ISendResendSignoffLinkBody {
+interface ISendResendSignoffLinkBody {
   activityId: string;
   phone: string;
 }
