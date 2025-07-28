@@ -902,15 +902,13 @@ const MainDashboard = () => {
   // Render channel item
   const renderChannelItem = ({ item }: { item: ChannelItem }) => (
     <TouchableOpacity
-      className="bg-white mx-4 mb-5 rounded-2xl shadow-md border border-gray-100"
+      className="mx-4 mb-5 rounded-2xl border border-gray-200 bg-white shadow"
       activeOpacity={0.7}
       onPress={() => {
-        if (activeTab === "cancelled") {
-          handleActivityClick(item);
-        }
+        if (activeTab === "cancelled") handleActivityClick(item);
       }}
     >
-      <View className="bg-white p-5 rounded-2xl shadow-lg mb-5 border border-gray-200">
+      <View className="p-5 rounded-2xl space-y-4">
         {/* Header with Name and Status */}
         <View className="flex-row justify-between items-center mb-4">
           <Text className="text-xl font-semibold text-gray-900 flex-1 pr-2">
