@@ -1675,7 +1675,7 @@ const MainDashboard = () => {
                   <Ionicons name="search-outline" size={20} color="#6B7280" />
                   <TextInput
                     className="flex-1 ml-3 text-gray-800"
-                    placeholder={`Search ${activeTab} channels...`}
+                    placeholder={`Search ${activeTab} activities...`}
                     placeholderTextColor="#9CA3AF"
                     value={searchQuery}
                     onChangeText={handleSearch}
@@ -1691,7 +1691,7 @@ const MainDashboard = () => {
                 <View className="flex-row justify-between items-center mt-3">
                   <Text className="text-gray-600">
                     Showing {filteredChannels.length} of {totalRecords}{" "}
-                    {activeTab} channels
+                    {activeTab} activities
                     {totalPages > 1 &&
                       ` (Page ${currentPage} of ${totalPages})`}
                   </Text>
