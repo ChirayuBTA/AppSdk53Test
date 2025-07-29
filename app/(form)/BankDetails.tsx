@@ -451,7 +451,7 @@ const BankDetails = () => {
             setIsDeclarationChecked(false);
             setOtpMode(false);
             setEnteredOTP("");
-            router.replace("/(screens)/MainDashboard");
+            router.replace("/(screens)/MainScreen");
 
             // Refresh and exit edit mode
             fetchBankDetails().then(() => {
@@ -516,7 +516,7 @@ const BankDetails = () => {
 
       if (response && response.success) {
         Alert.alert("OTP Verified", "OTP verified successfully");
-        router.replace("/(screens)/MainDashboard");
+        router.replace("/(screens)/MainScreen");
       } else {
         Alert.alert("Error", response?.message || "Invalid OTP");
       }

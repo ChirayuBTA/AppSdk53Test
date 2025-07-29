@@ -727,7 +727,7 @@ const BasicDetails = () => {
           [
             {
               text: "Later",
-              onPress: () => router.push("/(screens)/MainDashboard"),
+              onPress: () => router.push("/(screens)/MainScreen"),
               style: "cancel",
             },
             {

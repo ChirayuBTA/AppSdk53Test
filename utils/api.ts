@@ -167,13 +167,10 @@ export const api = {
   },
   getAllChannelTypes: async function (query: any) {
     const headers = await authHeaders();
-    return fetch(
-      `${apiUrl}/channelApp/getAllChannelType?${queryString(query)}`,
-      {
-        headers: headers,
-        cache: "no-store",
-      }
-    ).then(handleResponse);
+    return fetch(`${apiUrl}/channelType/?${queryString(query)}`, {
+      headers: headers,
+      cache: "no-store",
+    }).then(handleResponse);
   },
   createChannel: async function (body: FormData) {
     const headers = await formHeaders();
