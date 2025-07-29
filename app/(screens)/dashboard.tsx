@@ -226,6 +226,20 @@ const DashboardScreen = () => {
                   : `#${item.orderId}`
                 : "Order ID Not Available"}
             </Text>
+          </View>
+          {/* Cashback section with flag */}
+          <View className="flex-row items-center mt-2">
+            {item.cashbackAmount ? (
+              <View className="bg-green-100 px-3 py-1 rounded-full self-start">
+                <Text className="text-green-700 font-semibold">
+                  ₹{item.cashbackAmount} Cashback
+                </Text>
+              </View>
+            ) : (
+              <View className="bg-gray-100 px-3 py-1 rounded-full self-start">
+                <Text className="text-gray-500">No Cashback</Text>
+              </View>
+            )}
             {activeTab === "today" && (
               <TouchableOpacity
                 onPress={() => handleFlagEntry(item)}
@@ -239,17 +253,6 @@ const DashboardScreen = () => {
               </TouchableOpacity>
             )}
           </View>
-          {item.cashbackAmount ? (
-            <View className="bg-green-100 px-3 py-1 rounded-full mt-2 self-start">
-              <Text className="text-green-700 font-semibold">
-                ₹{item.cashbackAmount} Cashback
-              </Text>
-            </View>
-          ) : (
-            <View className="bg-gray-100 px-3 py-1 rounded-full mt-2 self-start">
-              <Text className="text-gray-500">No Cashback</Text>
-            </View>
-          )}
         </View>
 
         {/* Images Container */}
