@@ -207,16 +207,19 @@ const MainDashboard = () => {
     {
       key: "upcoming" as ChannelType,
       label: "Upcoming",
+      color: "#3B82F6",
       icon: "calendar-outline",
     },
     {
       key: "past" as ChannelType,
       label: "Past",
+      color: "#10B981",
       icon: "checkmark-done-outline",
     },
     {
       key: "cancelled" as ChannelType,
       label: "Cancelled",
+      color: "#EF4444",
       icon: "close-circle-outline",
     },
   ];
@@ -810,45 +813,50 @@ const MainDashboard = () => {
 
   // Render tab bar with counts
   const renderTabBar = () => (
-    <View className="mx-4 mb-4">
-      <View className="bg-white rounded-2xl shadow-md p-2">
+    <View className="mx-4 mb-3">
+      <View className="bg-white rounded-3xl shadow-sm p-2">
         <View className="flex-row">
-          {tabs.map((tab) => (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => handleTabChange(tab.key)}
-              className={`flex-1 flex-row items-center justify-center py-3 px-4 rounded-xl ${
-                activeTab === tab.key ? "bg-primary" : "bg-transparent"
-              }`}
-            >
-              <Ionicons
-                name={tab.icon as any}
-                size={20}
-                color={activeTab === tab.key ? "white" : "#6B7280"}
-              />
-              <Text
-                className={`ml-2 font-medium ${
-                  activeTab === tab.key ? "text-white" : "text-gray-600"
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.key;
+            const tabColor = tab.color || "#3B82F6"; // fallback to blue if color not defined
+
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => handleTabChange(tab.key)}
+                className={`flex-1 items-center py-4 px-2 rounded-2xl ${
+                  isActive ? "bg-blue-50" : ""
                 }`}
+                style={isActive ? { backgroundColor: `${tabColor}10` } : {}}
               >
-                {tab.label}
-              </Text>
-              {/* Show count badge */}
-              <View
-                className={`ml-2 px-2 py-1 rounded-full ${
-                  activeTab === tab.key ? "bg-white/20" : "bg-gray-200"
-                }`}
-              >
+                <View className="relative">
+                  <Ionicons
+                    name={tab.icon as any}
+                    size={24}
+                    color={isActive ? tabColor : "#9CA3AF"}
+                  />
+                  {tabCounts[tab.key] > 0 && (
+                    <View
+                      className="absolute -top-2 -right-2 min-w-[20px] h-5 rounded-full items-center justify-center"
+                      style={{ backgroundColor: tabColor }}
+                    >
+                      <Text className="text-white text-xs font-bold">
+                        {tabCounts[tab.key]}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <Text
-                  className={`text-xs font-bold ${
-                    activeTab === tab.key ? "text-white" : "text-gray-600"
+                  className={`text-xs font-semibold mt-2 ${
+                    isActive ? "opacity-100" : "text-gray-500"
                   }`}
+                  style={isActive ? { color: tabColor } : {}}
                 >
-                  {tabCounts[tab.key]}
+                  {tab.label}
                 </Text>
-              </View>
-            </TouchableOpacity>
-          ))}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </View>
     </View>
