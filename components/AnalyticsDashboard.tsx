@@ -1,28 +1,27 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Dimensions,
-  ScrollView,
-  Modal,
-  TouchableWithoutFeedback,
-  Animated,
-  Easing,
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { BarChart } from "react-native-chart-kit";
 import { api } from "@/utils/api"; // Import your API utility
+import { Ionicons } from "@expo/vector-icons";
 import {
+  endOfMonth,
   format,
   parseISO,
-  startOfWeek,
-  endOfWeek,
   startOfMonth,
-  endOfMonth,
+  startOfWeek,
   startOfYear,
 } from "date-fns";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Easing,
+  Modal,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
+import { BarChart } from "react-native-chart-kit";
 
 const { width: screenWidth } = Dimensions.get("window");
 
@@ -33,7 +32,7 @@ interface AnalyticsData {
       data: number[];
       color?: (opacity: number) => string;
       strokeWidth?: number;
-    }
+    },
   ];
 }
 
@@ -550,7 +549,7 @@ const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                       {getSelectedMetricLabel()} - {getSelectedPeriodLabel()}
                     </Text>
                     <View className="flex-row items-center">
-                      <View className="w-3 h-3 bg-blue-500 rounded-full mr-2" />
+                      <View className="w-3 h-3 bg-primary rounded-full mr-2" />
                       <Text className="text-gray-600 text-sm">
                         {getSelectedMetricLabel()}
                       </Text>

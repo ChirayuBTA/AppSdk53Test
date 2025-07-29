@@ -1578,7 +1578,7 @@ const MainDashboard = () => {
               className="bg-gray-800 px-3 py-1 rounded-lg"
             >
               <Text className="text-white text-sm font-medium">
-                Edit Existing Channel
+                Edit Channel
               </Text>
             </Animated.View>
             <TouchableOpacity
@@ -1611,7 +1611,7 @@ const MainDashboard = () => {
               className="bg-gray-800 px-3 py-1 rounded-lg"
             >
               <Text className="text-white text-sm font-medium">
-                Add New Channel
+                Add Channel
               </Text>
             </Animated.View>
             <TouchableOpacity

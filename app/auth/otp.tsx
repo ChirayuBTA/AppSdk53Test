@@ -107,7 +107,7 @@ const OtpScreen = () => {
               pathname: "/auth/projectCode",
               params: { phoneNumber },
             })
-          : router.replace({ pathname: "/(screens)/MainDashboard" });
+          : router.replace({ pathname: "/(screens)/MainScreen" });
       })
       .catch((error) => {
         if (error.name === "AppUpdateRequiredError") {
