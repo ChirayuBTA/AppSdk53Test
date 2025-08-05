@@ -90,6 +90,7 @@ const ExpenseForm = () => {
     invoice_receipt: false,
     bta_voucher: false,
   });
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Add state for travel description fields
   const [travelFields, setTravelFields] = useState({
@@ -693,7 +694,10 @@ const ExpenseForm = () => {
   };
 
   return (
-    <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
+    <ScreenWrapper
+      headerProps={{ showOnlyLogout: true }}
+      showScroll={!isDropdownOpen}
+    >
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color="#f89f22" />
@@ -732,6 +736,7 @@ const ExpenseForm = () => {
               pageSize={10}
               noDataMessage="No brands available"
               errorMessage="Failed to load brands. Please try again."
+              onDropdownToggle={setIsDropdownOpen}
             />
 
             {/* Activity Planned Date */}
@@ -772,6 +777,7 @@ const ExpenseForm = () => {
             pageSize={10}
             noDataMessage="No activity types available"
             errorMessage="Failed to load activity types. Please try again."
+              onDropdownToggle={setIsDropdownOpen}
           /> */}
 
             {/* Channel Select */}
@@ -787,6 +793,7 @@ const ExpenseForm = () => {
               pageSize={10}
               noDataMessage="No channels available"
               errorMessage="Failed to load channels. Please try again."
+              onDropdownToggle={setIsDropdownOpen}
             />
 
             {/* Project Select */}
@@ -802,6 +809,7 @@ const ExpenseForm = () => {
               pageSize={10}
               noDataMessage="No projects available"
               errorMessage="Failed to load projects. Please try again."
+              onDropdownToggle={setIsDropdownOpen}
             />
 
             {/* Paid To Field */}
@@ -861,6 +869,7 @@ const ExpenseForm = () => {
               errorMessage="Failed to load expense types. Please try again."
               formatDisplayText={(item) => item.expenseName}
               formatSelectedText={(item) => item.expenseName}
+              onDropdownToggle={setIsDropdownOpen}
             />
 
             {/* Amount Field */}

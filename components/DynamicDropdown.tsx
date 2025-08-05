@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  Alert,
-  ActivityIndicator,
+  View,
 } from "react-native";
 
 interface DropdownItem {
@@ -41,6 +40,7 @@ interface DynamicDropdownProps {
   errorMessage?: string;
   additionalQueryParams?: Record<string, any>;
   debounceDelay?: number;
+  onDropdownToggle?: (isOpen: boolean) => void;
 }
 
 const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
@@ -62,6 +62,7 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
   errorMessage = "Failed to load items. Please try again.",
   additionalQueryParams = {},
   debounceDelay = 500,
+  onDropdownToggle,
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [items, setItems] = useState<DropdownItem[]>([]);
@@ -163,8 +164,13 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
   const toggleDropdown = () => {
     if (disabled) return;
 
-    setShowDropdown(!showDropdown);
-    if (!showDropdown) {
+    const newShowDropdown = !showDropdown;
+    setShowDropdown(newShowDropdown);
+
+    // Notify parent about dropdown state
+    onDropdownToggle?.(newShowDropdown);
+
+    if (!newShowDropdown) {
       setSearchText("");
       setPage(1);
       setError("");
