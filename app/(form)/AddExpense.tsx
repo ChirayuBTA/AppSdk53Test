@@ -665,13 +665,16 @@ const ExpenseForm = () => {
     const invoiceFiles = getFilesByCategory("invoice_receipt");
     const btaFiles = getFilesByCategory("bta_voucher");
 
-    if (invoiceFiles.length === 0 && btaFiles.length === 0) {
-      Alert.alert(
-        "Error",
-        "Please upload either Invoice/Receipt or BTA Voucher"
-      );
-      setIsSubmitting(false);
-      return;
+    // Only require file uploads for non-travel expenses
+    if (!TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId)) {
+      if (invoiceFiles.length === 0 && btaFiles.length === 0) {
+        Alert.alert(
+          "Error",
+          "Please upload either Invoice/Receipt or BTA Voucher"
+        );
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     // Create FormData for submission with files
@@ -724,7 +727,7 @@ const ExpenseForm = () => {
             uploadedFiles.length
           } file(s) uploaded.`
         );
-        router.back();
+        router.replace(`/(screens)/MainScreen`);
       } else {
         Alert.alert(
           "Error",
@@ -1058,8 +1061,10 @@ const ExpenseForm = () => {
             {/* Note about required uploads */}
             <View className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <Text className="text-xs text-yellow-700">
-                <Text className="font-medium">Note:</Text> At least one of
-                Invoice/Receipt or BTA Voucher must be uploaded.
+                <Text className="font-medium">Note:</Text>
+                {TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId)
+                  ? "For travel expenses, Invoice/Receipt and BTA Voucher uploads are optional."
+                  : "At least one of Invoice/Receipt or BTA Voucher must be uploaded."}
                 {formData.paymentType === "UPI_NETBANKING" &&
                   " Payment supporting document is required for UPI/Net Banking payments."}
               </Text>
