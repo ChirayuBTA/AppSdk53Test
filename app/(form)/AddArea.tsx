@@ -132,6 +132,7 @@ const AddArea = () => {
             value={formData.areaName}
             onChangeText={(value) => updateField("areaName", value)}
             placeholder="Enter area name"
+            placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-white"
             autoCapitalize="words"
             autoCorrect={false}

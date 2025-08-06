@@ -1,22 +1,21 @@
+import { api } from "@/utils/api";
+import { getAuthValue, getLocValue } from "@/utils/storage";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  ScrollView,
-  StatusBar,
-  ActivityIndicator,
+  View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { api } from "@/utils/api";
-import { getAuthValue, getLocValue } from "@/utils/storage";
-import Toast from "react-native-toast-message";
 
 const LoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState<string>("");
@@ -198,7 +197,7 @@ const LoginScreen = () => {
                 className="flex-1 text-lg text-black ml-3"
                 keyboardType="numeric"
                 placeholder="10-digit number"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="grey"
                 maxLength={10}
                 value={phoneNumber}
                 onChangeText={

@@ -198,7 +198,7 @@ const OtpScreen = () => {
               keyboardType="numeric"
               maxLength={6}
               placeholder="Enter OTP"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor="grey"
               value={otp}
               onChangeText={(text) => setOtp(text.replace(/[^0-9]/g, ""))}
               autoFocus

@@ -1299,6 +1299,7 @@ const MainDashboard = () => {
                   updateManagerField("managerName", value)
                 }
                 placeholder="Enter manager name"
+                placeholderTextColor="grey"
                 editable={!otpMode}
                 className={`border rounded-lg p-3 ${
                   otpMode
@@ -1319,6 +1320,7 @@ const MainDashboard = () => {
                   updateManagerField("managerPhone", value)
                 }
                 placeholder="Enter 10-digit phone number"
+                placeholderTextColor="grey"
                 keyboardType="numeric"
                 maxLength={10}
                 editable={!otpMode}
@@ -1370,6 +1372,7 @@ const MainDashboard = () => {
                   value={enteredOTP}
                   onChangeText={setEnteredOTP}
                   placeholder="Enter 6-digit OTP"
+                  placeholderTextColor="grey"
                   // keyboardType="numeric"
                   maxLength={6}
                   className="border border-gray-300 rounded-lg p-3 bg-white"
@@ -1496,6 +1499,7 @@ const MainDashboard = () => {
               value={cancelReason}
               onChangeText={(value) => setCancelReason(value)}
               placeholder="Enter reason"
+              placeholderTextColor="grey"
               maxLength={100}
               multiline
               className="border border-gray-300 rounded-lg p-3 bg-white text-black mb-6 h-24"
@@ -1676,7 +1680,7 @@ const MainDashboard = () => {
                   <TextInput
                     className="flex-1 ml-3 text-gray-800"
                     placeholder={`Search ${activeTab} activities...`}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor="grey"
                     value={searchQuery}
                     onChangeText={handleSearch}
                     returnKeyType="search"

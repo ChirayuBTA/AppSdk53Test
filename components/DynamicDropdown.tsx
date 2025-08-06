@@ -216,6 +216,7 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
                 value={searchText}
                 onChangeText={setSearchText}
                 placeholder={searchPlaceholder}
+                placeholderTextColor="grey"
                 className="border border-gray-300 rounded-lg p-2 bg-gray-50"
               />
             </View>

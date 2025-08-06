@@ -733,6 +733,7 @@ const CreateScreen = () => {
               <TextInput
                 className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 mb-4 text-lg text-black"
                 placeholder="Enter name"
+                placeholderTextColor="grey"
                 value={name}
                 onChangeText={setName}
               />
@@ -744,6 +745,7 @@ const CreateScreen = () => {
               <TextInput
                 className="w-full bg-white border border-gray-300 rounded-xl px-4 py-3 mb-4 text-lg text-black"
                 placeholder="Enter phone number"
+                placeholderTextColor="grey"
                 maxLength={10}
                 keyboardType="phone-pad"
                 value={phone}

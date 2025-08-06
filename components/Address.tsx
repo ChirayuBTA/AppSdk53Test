@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Alert } from "react-native";
 import { api } from "@/utils/api";
+import React, { useEffect, useState } from "react";
+import { Alert, Text, TextInput, View } from "react-native";
 
 // You'll need to install this package: npm install indian-pincodes
 // If not available, you can use a pincode API or create a local mapping
@@ -233,6 +233,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           value={value.address}
           onChangeText={handleAddressChange}
           placeholder={addressPlaceholder}
+          placeholderTextColor="grey"
           multiline
           numberOfLines={3}
           className="border border-gray-300 rounded-lg p-3 bg-white"
@@ -251,6 +252,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           value={value.pincode}
           onChangeText={handlePincodeChange}
           placeholder="Enter 6-digit pincode"
+          placeholderTextColor="grey"
           keyboardType="numeric"
           maxLength={6}
           className="border border-gray-300 rounded-lg p-3 bg-white"
@@ -274,6 +276,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             value={value.cityName}
             onChangeText={handleCityChange}
             placeholder="City will auto-populate"
+            placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-gray-50"
             editable={false}
           />
@@ -294,6 +297,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           <TextInput
             value={value.state}
             placeholder="State will auto-populate"
+            placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-gray-50"
             editable={false}
             style={{ color: "#374151" }}

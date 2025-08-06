@@ -583,6 +583,7 @@ const BankDetails = () => {
             value={formData.bankName}
             onChangeText={(value) => updateField("bankName", value)}
             placeholder="Enter bank name"
+            placeholderTextColor="grey"
             editable={!isReadOnly}
             className={`border rounded-lg p-3 ${
               isReadOnly
@@ -604,6 +605,7 @@ const BankDetails = () => {
             value={formData.accountName}
             onChangeText={(value) => updateField("accountName", value)}
             placeholder="Enter account holder name"
+            placeholderTextColor="grey"
             editable={!isReadOnly}
             className={`border rounded-lg p-3 ${
               isReadOnly
@@ -625,6 +627,7 @@ const BankDetails = () => {
             value={formData.accountNumber}
             onChangeText={(value) => updateField("accountNumber", value)}
             placeholder="Enter account number"
+            placeholderTextColor="grey"
             keyboardType="numeric"
             editable={!isReadOnly}
             className={`border rounded-lg p-3 ${
@@ -648,6 +651,7 @@ const BankDetails = () => {
                 updateField("confirmAccountNumber", value)
               }
               placeholder="Re-enter account number"
+              placeholderTextColor="grey"
               keyboardType="numeric"
               className="border border-gray-300 rounded-lg p-3 bg-white"
             />
@@ -671,6 +675,7 @@ const BankDetails = () => {
               updateField("ifscCode", value.toUpperCase())
             }
             placeholder="Enter IFSC code"
+            placeholderTextColor="grey"
             maxLength={11}
             editable={!isReadOnly}
             className={`border rounded-lg p-3 ${
@@ -858,6 +863,7 @@ const BankDetails = () => {
                   updateManagerField("managerName", value)
                 }
                 placeholder="Enter manager name"
+                placeholderTextColor="grey"
                 className="border border-gray-300 rounded-lg p-3 bg-white"
               />
             </View>
@@ -873,6 +879,7 @@ const BankDetails = () => {
                   updateManagerField("managerPhone", value)
                 }
                 placeholder="Enter 10-digit phone number"
+                placeholderTextColor="grey"
                 keyboardType="numeric"
                 maxLength={10}
                 className="border border-gray-300 rounded-lg p-3 bg-white"
@@ -916,6 +923,7 @@ const BankDetails = () => {
                   value={enteredOTP}
                   onChangeText={setEnteredOTP}
                   placeholder="Enter 6-digit OTP"
+                  placeholderTextColor="grey"
                   // keyboardType="numeric"
                   maxLength={6}
                   className="border border-gray-300 rounded-lg p-3 bg-white"

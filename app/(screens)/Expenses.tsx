@@ -693,9 +693,6 @@ const ExpensesScreen = () => {
           <View className="flex-row justify-between items-start mb-4">
             <View className="flex-1">
               <Text className="text-lg font-semibold text-gray-900 mb-1">
-                {item.name}
-              </Text>
-              <Text className="text-gray-500 text-sm">
                 Paid to: {item.paidTo}
               </Text>
             </View>
@@ -889,7 +886,7 @@ const ExpensesScreen = () => {
             <TextInput
               className="flex-1 ml-3 text-gray-800 text-base"
               placeholder={`Search ${activeTab} expenses...`}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="grey"
               value={searchQuery}
               onChangeText={handleSearch}
               returnKeyType="search"

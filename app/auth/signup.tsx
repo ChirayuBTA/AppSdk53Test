@@ -148,7 +148,7 @@ const SignupScreen = () => {
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 text-black"
               placeholder="Enter your full name"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor="grey"
               value={formData.name}
               onChangeText={(text) => updateFormData("name", text)}
             />
@@ -166,7 +166,7 @@ const SignupScreen = () => {
               <TextInput
                 className="flex-1 text-lg text-black ml-3"
                 placeholder="10-digit number"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="grey"
                 value={formData.phone}
                 onChangeText={(text) =>
                   updateFormData("phone", text.replace(/[^0-9]/g, ""))
@@ -194,7 +194,7 @@ const SignupScreen = () => {
               <TextInput
                 className="flex-1 text-lg text-black ml-3"
                 placeholder="10-digit number"
-                placeholderTextColor="#A0A0A0"
+                placeholderTextColor="grey"
                 value={formData.altPhone}
                 onChangeText={(text) =>
                   updateFormData("altPhone", text.replace(/[^0-9]/g, ""))
@@ -220,7 +220,7 @@ const SignupScreen = () => {
             <TextInput
               className="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 text-black"
               placeholder="Enter your email address"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor="grey"
               value={formData.email}
               onChangeText={(text) => updateFormData("email", text)}
               keyboardType="email-address"
@@ -236,7 +236,7 @@ const SignupScreen = () => {
               <TextInput
                 className="border border-gray-300 rounded-xl px-4 py-3 bg-gray-50 text-black"
                 placeholder="Enter your promo code"
-                placeholderTextColor="#A0A0A0"
+            placeholderTextColor="grey"
                 value={formData.promoCode}
                 onChangeText={(text) =>
                   updateFormData("promoCode", text.replace(/\s/g, ""))

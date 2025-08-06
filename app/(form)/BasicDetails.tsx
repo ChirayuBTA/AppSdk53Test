@@ -792,6 +792,7 @@ const BasicDetails = () => {
             value={formData.channelName}
             onChangeText={(value) => updateField("channelName", value)}
             placeholder="Enter legal name"
+            placeholderTextColor="grey"
             className={`border rounded-lg p-3 bg-white ${
               validationErrors.channelName
                 ? "border-red-500"
@@ -829,6 +830,7 @@ const BasicDetails = () => {
             value={formData.locationLink}
             onChangeText={(value) => updateField("locationLink", value)}
             placeholder="https://maps.google.com/... or any location URL"
+            placeholderTextColor="grey"
             className={`border rounded-lg p-3 bg-white ${
               validationErrors.locationLink
                 ? "border-red-500"
@@ -885,6 +887,7 @@ const BasicDetails = () => {
               value={formData.registrationNo}
               onChangeText={(value) => updateField("registrationNo", value)}
               placeholder="Enter legal entity registration number"
+              placeholderTextColor="grey"
               className={`border rounded-lg p-3 bg-white ${
                 validationErrors.registrationNo
                   ? "border-red-500"
@@ -906,6 +909,7 @@ const BasicDetails = () => {
               value={formData.pan}
               onChangeText={(value) => updateField("pan", value.toUpperCase())}
               placeholder="Enter PAN number (e.g., ABCDE1234F)"
+              placeholderTextColor="grey"
               maxLength={10}
               className={`border rounded-lg p-3 bg-white ${
                 validationErrors.pan ? "border-red-500" : "border-gray-300"
@@ -924,6 +928,7 @@ const BasicDetails = () => {
                 updateField("gstin", value.toUpperCase())
               }
               placeholder="Enter GSTIN number (15 characters)"
+              placeholderTextColor="grey"
               maxLength={15}
               className={`border rounded-lg p-3 bg-white ${
                 validationErrors.gstin ? "border-red-500" : "border-gray-300"
@@ -943,6 +948,7 @@ const BasicDetails = () => {
             value={formData.managerName}
             onChangeText={(value) => updateField("managerName", value)}
             placeholder="Person in charge of decision"
+            placeholderTextColor="grey"
             className={`border rounded-lg p-3 bg-white ${
               validationErrors.managerName
                 ? "border-red-500"
@@ -961,6 +967,7 @@ const BasicDetails = () => {
             value={formData.managerContact}
             onChangeText={(value) => updateField("managerContact", value)}
             placeholder="Enter 10-digit contact number"
+            placeholderTextColor="grey"
             keyboardType="phone-pad"
             maxLength={10}
             className={`border rounded-lg p-3 bg-white ${

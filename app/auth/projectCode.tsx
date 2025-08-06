@@ -146,7 +146,7 @@ const ProjectCodeScreen = () => {
               keyboardType="numeric"
               maxLength={6}
               placeholder="Enter Project Code"
-              placeholderTextColor="#A0A0A0"
+              placeholderTextColor="grey"
               value={projectCode}
               onChangeText={(text) =>
                 setProjectCode(text.replace(/[^0-9]/g, ""))

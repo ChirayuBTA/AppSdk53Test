@@ -559,6 +559,7 @@ const ActivityDetails = () => {
               value={formData.pocName}
               onChangeText={(value) => updateField("pocName", value)}
               placeholder="For activity coordination"
+              placeholderTextColor="grey"
               className="border border-gray-300 rounded-lg p-3 bg-white"
             />
           </View>
@@ -572,6 +573,7 @@ const ActivityDetails = () => {
               value={formData.pocContact}
               onChangeText={(value) => updateField("pocContact", value)}
               placeholder="Enter 10-digit contact number"
+              placeholderTextColor="grey"
               keyboardType="phone-pad"
               maxLength={10}
               className="border border-gray-300 rounded-lg p-3 bg-white"
@@ -673,6 +675,7 @@ const ActivityDetails = () => {
               value={formData.channelFees}
               onChangeText={handleChannelFeesChange}
               placeholder="Enter amount"
+              placeholderTextColor="grey"
               keyboardType="numeric"
               className="border border-gray-300 rounded-lg p-3 bg-white"
             />

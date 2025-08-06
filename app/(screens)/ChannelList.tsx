@@ -317,7 +317,7 @@ const ChannelList = () => {
             <TextInput
               className="flex-1 ml-3 text-gray-800"
               placeholder="Search channels..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor="grey"
               value={searchQuery}
               onChangeText={handleSearch}
               returnKeyType="search"

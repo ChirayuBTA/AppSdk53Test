@@ -1,15 +1,15 @@
 import { Search, X } from "lucide-react-native";
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-  ActivityIndicator,
 } from "react-native";
 
 const SearchDropdown = ({
@@ -124,7 +124,7 @@ const SearchDropdown = ({
           onChangeText={handleChangeText}
           onFocus={handleFocus}
           placeholder={placeholder}
-          placeholderTextColor="#888"
+          placeholderTextColor="grey"
           value={text}
         />
         <TouchableOpacity onPress={resetSearch} style={styles.iconWrapper}>
