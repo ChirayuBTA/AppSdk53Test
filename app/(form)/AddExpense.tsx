@@ -110,6 +110,27 @@ const ExpenseForm = () => {
       if (response && response.success && response.data) {
         const data = response.data;
 
+        // Parse travel description if it's a travel expense
+        if (
+          TRAVEL_EXPENSE_IDS.includes(data.natureOfExpenseId || "") &&
+          data.description
+        ) {
+          const desc = data.description;
+
+          // Parse the travel description using regex
+          const fromMatch = desc.match(/I travelled from (.+?) to/);
+          const toMatch = desc.match(/to (.+?) by/);
+          const modeMatch = desc.match(/by (.+?) for/);
+          const purposeMatch = desc.match(/for (.+?)\./);
+
+          setTravelFields({
+            from: fromMatch ? fromMatch[1].trim() : "",
+            to: toMatch ? toMatch[1].trim() : "",
+            mode: modeMatch ? modeMatch[1].trim() : "",
+            purpose: purposeMatch ? purposeMatch[1].trim() : "",
+          });
+        }
+
         // Map API response to form data
         setFormData({
           name: data.name || "",
@@ -552,6 +573,39 @@ const ExpenseForm = () => {
       return;
     }
 
+    // Travel fields validation for travel expense types
+    if (TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId)) {
+      if (!travelFields.from.trim()) {
+        Alert.alert("Error", "Please enter 'From' location for travel expense");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!travelFields.to.trim()) {
+        Alert.alert("Error", "Please enter 'To' location for travel expense");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!travelFields.mode.trim()) {
+        Alert.alert(
+          "Error",
+          "Please enter mode of transport for travel expense"
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!travelFields.purpose.trim()) {
+        Alert.alert(
+          "Error",
+          "Please enter purpose of travel for travel expense"
+        );
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     // if (!formData.activityTypeId) {
     //   Alert.alert("Error", "Please select an activity type");
     //   setIsSubmitting(false);
@@ -759,7 +813,7 @@ const ExpenseForm = () => {
                   mode="date"
                   display={Platform.OS === "ios" ? "spinner" : "default"}
                   onChange={handleDateChange}
-                  minimumDate={getMinDate()} // T+2 minimum date
+                  // minimumDate={getMinDate()} // T+2 minimum date
                 />
               )}
             </View>
