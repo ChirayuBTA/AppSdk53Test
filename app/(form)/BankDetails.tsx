@@ -28,6 +28,8 @@ interface UploadedFile {
   uri: string;
   type: string;
   size?: number;
+  category: "cancelled_cheque";
+  isExisting?: boolean;
 }
 
 const BankDetails = () => {
@@ -141,9 +143,15 @@ const BankDetails = () => {
 
           // Handle cancelled check file if exists
           if (data.cancelledCheck) {
-            // This would need to be handled based on how the file URL is structured
-            // For now, we'll just note that there's an existing file
-            // You might need to modify this based on your file storage structure
+            const existingFile: UploadedFile = {
+              id: `existing_cheque_${Date.now()}`,
+              name: "Cancelled Cheque",
+              uri: data.cancelledCheck,
+              type: "image", // or determine type based on URL extension
+              category: "cancelled_cheque",
+              isExisting: true,
+            };
+            setUploadedFiles([existingFile]);
           }
         } else {
           // No bank details exist, show empty form in edit mode
@@ -304,12 +312,15 @@ const BankDetails = () => {
       const asset = result.assets[0];
       const newFile: UploadedFile = {
         id: Date.now().toString(),
-        name: `Cheque_${Date.now()}.jpg`,
+        name: `Cheque_Camera_${Date.now()}.jpg`,
         uri: asset.uri,
         type: "image",
         size: asset.fileSize,
+        category: "cancelled_cheque",
+        isExisting: false,
       };
-      setUploadedFiles((prev) => [...prev, newFile]);
+      // Replace existing file instead of adding
+      setUploadedFiles([newFile]);
       setShowFileOptions(false);
     }
   };
@@ -323,21 +334,25 @@ const BankDetails = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: false, // Changed from true to false
       allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0]; // Only take the first asset
       const newFile: UploadedFile = {
         id: Date.now().toString(),
-        name: asset.fileName || `Cheque_${Date.now()}.jpg`,
+        name: asset.fileName || `Cheque_Gallery_${Date.now()}.jpg`,
         uri: asset.uri,
         type: "image",
         size: asset.fileSize,
+        category: "cancelled_cheque",
+        isExisting: false,
       };
-      setUploadedFiles((prev) => [...prev, newFile]);
+      // Replace existing file instead of adding
+      setUploadedFiles([newFile]);
       setShowFileOptions(false);
     }
   };
@@ -350,18 +365,22 @@ const BankDetails = () => {
       const result = await DocumentPicker.getDocumentAsync({
         type: "application/pdf",
         copyToCacheDirectory: true,
+        multiple: false, // Changed from true to false
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const asset = result.assets[0];
+      if (!result.canceled && result.assets.length > 0) {
+        const asset = result.assets[0]; // Only take the first asset
         const newFile: UploadedFile = {
           id: Date.now().toString(),
           name: asset.name,
           uri: asset.uri,
           type: "pdf",
           size: asset.size,
+          category: "cancelled_cheque",
+          isExisting: false,
         };
-        setUploadedFiles((prev) => [...prev, newFile]);
+        // Replace existing file instead of adding
+        setUploadedFiles([newFile]);
         setShowFileOptions(false);
       }
     } catch (error) {
@@ -418,15 +437,17 @@ const BankDetails = () => {
     formDataToSend.append("type", type);
 
     // Append uploaded files
-    uploadedFiles.forEach((file, index) => {
-      const fileObj = {
-        uri: file.uri,
-        type: file.type === "image" ? "image/jpeg" : "application/pdf",
-        name: file.name,
-      } as any;
+    uploadedFiles
+      .filter((file) => !file.isExisting) // Only upload new files
+      .forEach((file, index) => {
+        const fileObj = {
+          uri: file.uri,
+          type: file.type === "image" ? "image/jpeg" : "application/pdf",
+          name: file.name,
+        } as any;
 
-      formDataToSend.append(`files`, fileObj);
-    });
+        formDataToSend.append(`files`, fileObj);
+      });
 
     formDataToObject(formDataToSend, "Bank Details");
 
@@ -745,7 +766,8 @@ const BankDetails = () => {
           {uploadedFiles.length > 0 && (
             <View className="mb-4">
               <Text className="text-sm font-medium text-gray-700 mb-2">
-                Uploaded Files ({uploadedFiles.length})
+                Uploaded File{" "}
+                {/* Changed from "Uploaded Files (uploadedFiles.length)" */}
               </Text>
               {uploadedFiles.map((file) => (
                 <View
@@ -755,11 +777,11 @@ const BankDetails = () => {
                   {file.type === "image" ? (
                     <Image
                       source={{ uri: file.uri }}
-                      className="w-10 h-10 rounded mr-3"
+                      className="w-12 h-12 rounded-lg mr-3"
                       resizeMode="cover"
                     />
                   ) : (
-                    <View className="w-10 h-10 bg-red-100 rounded mr-3 items-center justify-center">
+                    <View className="w-12 h-12 bg-red-100 rounded-lg mr-3 items-center justify-center">
                       <Text className="text-red-600 text-xs font-bold">
                         PDF
                       </Text>
@@ -794,13 +816,13 @@ const BankDetails = () => {
           )}
 
           {/* Show existing file info in read-only mode */}
-          {isReadOnly && hasExistingData && (
+          {/* {isReadOnly && hasExistingData && (
             <View className="bg-gray-50 p-3 rounded-lg">
               <Text className="text-gray-600 text-sm">
                 📄 Cancelled cheque document is already uploaded
               </Text>
             </View>
-          )}
+          )} */}
         </View>
 
         {/* Action Buttons - Show save button in both read-only and edit modes */}
