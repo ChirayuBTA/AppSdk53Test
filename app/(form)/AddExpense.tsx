@@ -36,6 +36,7 @@ interface UploadedFile {
   type: string;
   size?: number;
   category: "payment_supporting" | "invoice_receipt" | "bta_voucher";
+  isExisting?: boolean;
 }
 
 const ExpenseForm = () => {
@@ -172,6 +173,7 @@ const ExpenseForm = () => {
             uri: data.paymentSupporting,
             type: "image",
             category: "payment_supporting",
+            isExisting: true,
           });
         }
 
@@ -182,6 +184,7 @@ const ExpenseForm = () => {
             uri: data.invoiceOrReceipt,
             type: "image",
             category: "invoice_receipt",
+            isExisting: true,
           });
         }
 
@@ -192,6 +195,7 @@ const ExpenseForm = () => {
             uri: data.btaVoucher,
             type: "image",
             category: "bta_voucher",
+            isExisting: true,
           });
         }
 
@@ -295,8 +299,14 @@ const ExpenseForm = () => {
         type: "image",
         size: asset.fileSize,
         category,
+        isExisting: false,
       };
-      setUploadedFiles((prev) => [...prev, newFile]);
+
+      // Replace existing files for this category instead of adding
+      setUploadedFiles((prev) => [
+        ...prev.filter((file) => file.category !== category),
+        newFile,
+      ]);
       setShowFileOptions((prev) => ({ ...prev, [category]: false }));
     }
   };
@@ -310,23 +320,29 @@ const ExpenseForm = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultipleSelection: true,
+      allowsMultipleSelection: false, // Changed from true to false
       allowsEditing: false,
       aspect: [4, 3],
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets.length > 0) {
-      const newFiles: UploadedFile[] = result.assets.map((asset, index) => ({
-        id: `${Date.now()}_${index}`,
-        name:
-          asset.fileName || `${category}_Gallery_${Date.now()}_${index}.jpg`,
+      const asset = result.assets[0]; // Only take the first asset
+      const newFile: UploadedFile = {
+        id: Date.now().toString(),
+        name: asset.fileName || `${category}_Gallery_${Date.now()}.jpg`,
         uri: asset.uri,
         type: "image",
         size: asset.fileSize,
         category,
-      }));
-      setUploadedFiles((prev) => [...prev, ...newFiles]);
+        isExisting: false,
+      };
+
+      // Replace existing files for this category instead of adding
+      setUploadedFiles((prev) => [
+        ...prev.filter((file) => file.category !== category),
+        newFile,
+      ]);
       setShowFileOptions((prev) => ({ ...prev, [category]: false }));
     }
   };
@@ -339,19 +355,26 @@ const ExpenseForm = () => {
       const result = await DocumentPicker.getDocumentAsync({
         type: "application/pdf",
         copyToCacheDirectory: true,
-        multiple: true,
+        multiple: false, // Changed from true to false
       });
 
       if (!result.canceled && result.assets.length > 0) {
-        const newFiles: UploadedFile[] = result.assets.map((asset, index) => ({
-          id: `${Date.now()}_${index}`,
+        const asset = result.assets[0]; // Only take the first asset
+        const newFile: UploadedFile = {
+          id: Date.now().toString(),
           name: asset.name,
           uri: asset.uri,
           type: "pdf",
           size: asset.size,
           category,
-        }));
-        setUploadedFiles((prev) => [...prev, ...newFiles]);
+          isExisting: false,
+        };
+
+        // Replace existing files for this category instead of adding
+        setUploadedFiles((prev) => [
+          ...prev.filter((file) => file.category !== category),
+          newFile,
+        ]);
         setShowFileOptions((prev) => ({ ...prev, [category]: false }));
       }
     } catch (error) {
@@ -511,7 +534,8 @@ const ExpenseForm = () => {
         {categoryFiles.length > 0 && (
           <View className="mb-3">
             <Text className="text-xs font-medium text-gray-700 mb-2">
-              Uploaded Files ({categoryFiles.length})
+              Uploaded File{" "}
+              {/* Changed from "Uploaded Files (categoryFiles.length)" */}
             </Text>
             {categoryFiles.map((file) => (
               <View
@@ -710,16 +734,18 @@ const ExpenseForm = () => {
     formDataToSend.append("description", formData.description);
     formDataToSend.append("userId", storedAuthData?.userId);
 
-    // Append uploaded files by category
-    uploadedFiles.forEach((file, index) => {
-      const fileObj = {
-        uri: file.uri,
-        type: file.type === "image" ? "image/jpeg" : "application/pdf",
-        name: file.name,
-      } as any;
+    // Append uploaded files by category - only new files, not existing ones
+    uploadedFiles
+      .filter((file) => !file.isExisting) // Only upload new files
+      .forEach((file, index) => {
+        const fileObj = {
+          uri: file.uri,
+          type: file.type === "image" ? "image/jpeg" : "application/pdf",
+          name: file.name,
+        } as any;
 
-      formDataToSend.append(`${file.category}_files`, fileObj);
-    });
+        formDataToSend.append(`${file.category}_files`, fileObj);
+      });
 
     try {
       console.log("Submitting expense data with files:", formDataToSend);
@@ -734,7 +760,7 @@ const ExpenseForm = () => {
         Alert.alert(
           "Success",
           `Expense details ${isEditMode ? "updated" : "saved"} successfully! ${
-            uploadedFiles.length
+            uploadedFiles.filter((file) => !file.isExisting).length
           } file(s) uploaded.`
         );
         router.replace(`/(screens)/MainScreen`);
