@@ -52,7 +52,7 @@ const ExpenseForm = () => {
   };
 
   const [formData, setFormData] = useState({
-    name: "",
+    // name: "",
     brandId: "",
     brandName: "",
     // activityTypeId: "",
@@ -91,6 +91,7 @@ const ExpenseForm = () => {
     bta_voucher: false,
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [expenseCategoryChanged, setExpenseCategoryChanged] = useState(false);
 
   // Add state for travel description fields
   const [travelFields, setTravelFields] = useState({
@@ -99,6 +100,15 @@ const ExpenseForm = () => {
     mode: "",
     purpose: "",
   });
+
+  useEffect(() => {
+    if (expenseCategoryChanged) {
+      // Clear expense type selection when category changes
+      updateField("expenseTypeId", "");
+      updateField("expenseTypeName", "");
+      setExpenseCategoryChanged(false);
+    }
+  }, [formData.expenseCategory]);
 
   const fetchAndPrefillData = async () => {
     if (!paramExpenseId) return;
@@ -133,7 +143,7 @@ const ExpenseForm = () => {
 
         // Map API response to form data
         setFormData({
-          name: data.name || "",
+          // name: data.name || "",
           brandId: data.brandId || "",
           brandName: data.brand?.name || "",
           activityDate: data.activityDate
@@ -561,11 +571,11 @@ const ExpenseForm = () => {
     setIsSubmitting(true);
 
     // Validation
-    if (!formData.name.trim()) {
-      Alert.alert("Error", "Please enter name");
-      setIsSubmitting(false);
-      return;
-    }
+    // if (!formData.name.trim()) {
+    //   Alert.alert("Error", "Please enter name");
+    //   setIsSubmitting(false);
+    //   return;
+    // }
 
     if (!formData.brandId) {
       Alert.alert("Error", "Please select a brand");
@@ -686,7 +696,7 @@ const ExpenseForm = () => {
     }
 
     // Append form fields
-    formDataToSend.append("name", formData.name);
+    // formDataToSend.append("name", formData.name);
     formDataToSend.append("brandId", formData.brandId);
     // formDataToSend.append("activityTypeId", formData.activityTypeId);
     formDataToSend.append("activityDate", formData.activityDate.toISOString());
@@ -768,7 +778,7 @@ const ExpenseForm = () => {
             </Text>
 
             {/* Name Field */}
-            <View className="mb-4">
+            {/* <View className="mb-4">
               <Text className="text-sm font-medium text-gray-700 mb-2">
                 Name <Text className="text-red-500">*</Text>
               </Text>
@@ -776,9 +786,10 @@ const ExpenseForm = () => {
                 value={formData.name}
                 onChangeText={(value) => updateField("name", value)}
                 placeholder="Enter your name"
+            placeholderTextColor="grey"
                 className="border border-gray-300 rounded-lg p-3 bg-white"
               />
-            </View>
+            </View> */}
 
             {/* Brand Select */}
             <DynamicDropdown
@@ -878,6 +889,7 @@ const ExpenseForm = () => {
                 value={formData.paidTo}
                 onChangeText={(value) => updateField("paidTo", value)}
                 placeholder="Enter paid to"
+                placeholderTextColor="grey"
                 className="border border-gray-300 rounded-lg p-3 bg-white"
               />
             </View>
@@ -889,22 +901,27 @@ const ExpenseForm = () => {
               </Text>
               <RadioButton
                 selected={formData.expenseCategory === "PROJECT_EXPENSE"}
-                onPress={() =>
-                  updateField("expenseCategory", "PROJECT_EXPENSE")
-                }
+                onPress={() => {
+                  updateField("expenseCategory", "PROJECT_EXPENSE");
+                  setIsDropdownOpen(false); // Close any open dropdown
+                  setExpenseCategoryChanged(true); // Mark category as changed
+                }}
                 label="Project Expense"
               />
               <RadioButton
                 selected={formData.expenseCategory === "GENERAL_EXPENSE"}
-                onPress={() =>
-                  updateField("expenseCategory", "GENERAL_EXPENSE")
-                }
+                onPress={() => {
+                  updateField("expenseCategory", "GENERAL_EXPENSE");
+                  setIsDropdownOpen(false); // Close any open dropdown
+                  setExpenseCategoryChanged(true); // Mark category as changed
+                }}
                 label="General Expense"
               />
             </View>
 
             {/* Nature of Expense Select */}
             <DynamicDropdown
+              key={`expense-type-${formData.expenseCategory}`}
               label="Nature of Expense"
               placeholder="Select Expense Type"
               isRequired={true}
@@ -941,6 +958,7 @@ const ExpenseForm = () => {
                 value={formData.amount}
                 onChangeText={handleAmountChange}
                 placeholder="Enter amount"
+                placeholderTextColor="grey"
                 keyboardType="numeric"
                 className="border border-gray-300 rounded-lg p-3 bg-white"
               />
@@ -973,6 +991,7 @@ const ExpenseForm = () => {
                       value={travelFields.from}
                       onChangeText={(v) => handleTravelFieldChange("from", v)}
                       placeholder="From"
+                      placeholderTextColor="grey"
                       className="border-b border-gray-400 text-sm text-gray-800 mx-2 px-1 pb-0.5 min-w-[90px]"
                     />
 
@@ -982,6 +1001,7 @@ const ExpenseForm = () => {
                       value={travelFields.to}
                       onChangeText={(v) => handleTravelFieldChange("to", v)}
                       placeholder="To"
+                      placeholderTextColor="grey"
                       className="border-b border-gray-400 text-sm text-gray-800 mx-2 px-1 pb-0.5 min-w-[90px]"
                     />
 
@@ -991,6 +1011,7 @@ const ExpenseForm = () => {
                       value={travelFields.mode}
                       onChangeText={(v) => handleTravelFieldChange("mode", v)}
                       placeholder="Mode"
+                      placeholderTextColor="grey"
                       className="border-b border-gray-400 text-sm text-gray-800 mx-2 px-1 pb-0.5 min-w-[100px]"
                     />
 
@@ -1002,6 +1023,7 @@ const ExpenseForm = () => {
                         handleTravelFieldChange("purpose", v)
                       }
                       placeholder="Purpose"
+                      placeholderTextColor="grey"
                       className="border-b border-gray-400 text-sm text-gray-800 mx-2 px-1 pb-0.5 min-w-[100px]"
                     />
 
@@ -1024,6 +1046,7 @@ const ExpenseForm = () => {
                   value={formData.description}
                   onChangeText={(value) => updateField("description", value)}
                   placeholder="Describe the expense in detail (purpose, items purchased, etc.)"
+                  placeholderTextColor="grey"
                   multiline
                   numberOfLines={4}
                   textAlignVertical="top"
