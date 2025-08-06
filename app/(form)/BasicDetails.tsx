@@ -135,6 +135,7 @@ const BasicDetails = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [storedLocData, setStoredLocData] = useState<any>();
   const [storedAuthData, setStoredAuthData] = useState<any>();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const statusBarHeight =
     Platform.OS === "ios"
@@ -781,6 +782,7 @@ const BasicDetails = () => {
           noDataMessage="No channel types available"
           errorMessage="Failed to load channel types. Please try again."
           maxHeight={320}
+          onDropdownToggle={setIsDropdownOpen}
         />
 
         {/* Channel Name */}
@@ -814,6 +816,7 @@ const BasicDetails = () => {
             addressLabel="Channel Address"
             addressPlaceholder="Enter address where activity will be conducted"
             showLabels={true}
+            forceUpdate={!isDropdownOpen} // Add this line
           />
           {renderValidationError("channelAddress")}
         </View>
@@ -864,6 +867,7 @@ const BasicDetails = () => {
             noDataMessage="No areas found"
             errorMessage="Failed to load areas. Please try again."
             maxHeight={320}
+            onDropdownToggle={setIsDropdownOpen}
           />
           {renderValidationError("areaId")}
         </View>

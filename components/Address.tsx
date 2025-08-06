@@ -39,6 +39,7 @@ interface LocationSelectorProps {
   addressLabel?: string;
   addressPlaceholder?: string;
   showLabels?: boolean;
+  forceUpdate?: boolean;
 }
 
 const LocationSelector: React.FC<LocationSelectorProps> = ({
@@ -48,9 +49,15 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
   addressLabel = "Address",
   addressPlaceholder = "Enter address",
   showLabels = true,
+  forceUpdate,
 }) => {
   const [isLoadingPincode, setIsLoadingPincode] = useState(false);
   const [allCities, setAllCities] = useState<City[]>([]);
+
+  // Add this useEffect to force re-render when needed:
+  useEffect(() => {
+    // This will trigger a re-render when forceUpdate changes
+  }, [forceUpdate]);
 
   // Fetch all cities on component mount
   useEffect(() => {
@@ -242,7 +249,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       </View>
 
       {/* Pincode Field */}
-      <View className="flex-1 mb-4">
+      <View className="mb-4">
         {showLabels && (
           <Text className="text-sm font-medium text-gray-700 mb-2">
             Pincode {requiredAsterisk}
@@ -257,6 +264,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           maxLength={6}
           className="border border-gray-300 rounded-lg p-3 bg-white"
           editable={!isLoadingPincode}
+          style={{ minHeight: 48 }} // Add this line
         />
         {isLoadingPincode && (
           <Text className="text-xs text-blue-600 mt-1">
@@ -279,6 +287,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-gray-50"
             editable={false}
+            style={{ minHeight: 48 }} // Add this line
           />
           {isLoadingPincode && (
             <Text className="text-xs text-blue-600 mt-1">
@@ -300,7 +309,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-gray-50"
             editable={false}
-            style={{ color: "#374151" }}
+            style={{ color: "#374151", minHeight: 48 }} // Add minHeight here
           />
         </View>
       </View>

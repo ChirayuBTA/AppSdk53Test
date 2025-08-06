@@ -157,8 +157,13 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
 
   const handleSelect = (item: DropdownItem) => {
     onSelect(item);
-    setShowDropdown(false);
     setSearchText("");
+
+    // Use setTimeout to ensure proper cleanup and re-render
+    setTimeout(() => {
+      setShowDropdown(false);
+      onDropdownToggle?.(false);
+    }, 0);
   };
 
   const toggleDropdown = () => {
@@ -207,7 +212,15 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
       {showDropdown && (
         <View
           className="border border-gray-300 rounded-lg mt-1 bg-white"
-          style={{ maxHeight }}
+          style={{
+            maxHeight,
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            elevation: 5, // For Android
+          }}
         >
           {/* Search Bar */}
           {searchable && (
