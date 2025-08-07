@@ -22,6 +22,7 @@ const UploadImages = () => {
   const [activityLocId, setActivityLocId] = useState("");
   const [activityCode, setActivityCode] = useState("");
   const [promoterId, setPromoterId] = useState("");
+  const [channelActivityDetailId, setChannelActivityDetailId] = useState("");
 
   const router = useRouter();
 
@@ -29,9 +30,13 @@ const UploadImages = () => {
     const activityLocId = await getLocValue("activityLocId");
     const storedPromoterId = await getAuthValue("promoterId");
     const storedActivityCode = await getLocValue("activityCode");
+    const storedChannelActivityDetailId = await getLocValue(
+      "channelActivityDetailId"
+    );
     setActivityLocId(activityLocId);
     setPromoterId(storedPromoterId);
     setActivityCode(storedActivityCode);
+    setChannelActivityDetailId(storedChannelActivityDetailId);
   };
 
   useEffect(() => {
@@ -130,6 +135,7 @@ const UploadImages = () => {
       formData.append("activityLocId", activityLocId);
       formData.append("promoterId", promoterId);
       formData.append("activityCode", activityCode);
+      formData.append("channelActivityDetailId", channelActivityDetailId);
 
       // Add a small delay to ensure FormData is properly constructed
       await new Promise((resolve) => setTimeout(resolve, 100));

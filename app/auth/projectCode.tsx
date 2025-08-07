@@ -84,6 +84,7 @@ const ProjectCodeScreen = () => {
             response.message || "Invalid Project Code"
           );
         }
+        console.log("verifyPromoCode response----", response);
 
         const authData = {
           token,
@@ -100,6 +101,7 @@ const ProjectCodeScreen = () => {
           activityLocId: response.promoter.activityLocId,
           activityLocName: response.promoter.activityLocName,
           activityId: response.promoter.activityId,
+          channelActivityDetailId: response.promoter.channelActivityDetailId,
           activityCode: projectCode,
         };
 

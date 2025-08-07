@@ -734,6 +734,36 @@ const ExpenseForm = () => {
     formDataToSend.append("description", formData.description);
     formDataToSend.append("userId", storedAuthData?.userId);
 
+    // Handle existing file URLs - send them as separate fields
+    const existingFiles = uploadedFiles.filter((file) => file.isExisting);
+    const existingPaymentSupporting = existingFiles.find(
+      (file) => file.category === "payment_supporting"
+    );
+    const existingInvoiceReceipt = existingFiles.find(
+      (file) => file.category === "invoice_receipt"
+    );
+    const existingBtaVoucher = existingFiles.find(
+      (file) => file.category === "bta_voucher"
+    );
+
+    if (existingPaymentSupporting) {
+      formDataToSend.append(
+        "existing_payment_supporting_url",
+        existingPaymentSupporting.uri
+      );
+    }
+
+    if (existingInvoiceReceipt) {
+      formDataToSend.append(
+        "existing_invoice_receipt_url",
+        existingInvoiceReceipt.uri
+      );
+    }
+
+    if (existingBtaVoucher) {
+      formDataToSend.append("existing_bta_voucher_url", existingBtaVoucher.uri);
+    }
+
     // Append uploaded files by category - only new files, not existing ones
     uploadedFiles
       .filter((file) => !file.isExisting) // Only upload new files

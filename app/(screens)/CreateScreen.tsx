@@ -69,6 +69,7 @@ const CreateScreen = () => {
     activityId: string;
     activityLocId: string;
     activityCode: string;
+    channelActivityDetailId: string;
     promoterId: string;
     vendorId: string;
     projectId: string;
@@ -77,6 +78,7 @@ const CreateScreen = () => {
     activityId: "",
     activityLocId: "",
     activityCode: "",
+    channelActivityDetailId: "",
     promoterId: "",
     vendorId: "",
     projectId: "",
@@ -232,6 +234,9 @@ const CreateScreen = () => {
     const activityId = await getLocValue("activityId");
     const activityLocId = await getLocValue("activityLocId");
     const activityCode = await getLocValue("activityCode");
+    const channelActivityDetailId = await getLocValue(
+      "channelActivityDetailId"
+    );
     const projectId = await getAuthValue("projectId");
     const vendorId = await getAuthValue("vendorId");
     const promoterId = await getAuthValue("promoterId");
@@ -241,6 +246,7 @@ const CreateScreen = () => {
       activityId: activityId,
       activityLocId: activityLocId,
       activityCode: activityCode,
+      channelActivityDetailId: channelActivityDetailId,
       promoterId: promoterId,
       vendorId: vendorId,
       projectId: projectId,
@@ -605,6 +611,7 @@ const CreateScreen = () => {
         projectId: storageData.projectId,
         activityLocId: storageData.activityLocId,
         activityCode: storageData.activityCode,
+        channelActivityDetailId: storageData.channelActivityDetailId,
         vendorId: storageData.vendorId,
         activityId: storageData.activityId,
         brandId: storageData.brandId,

@@ -766,7 +766,7 @@ const MainDashboard = () => {
 
       if (response && response.success) {
         Alert.alert("OTP Verified", "OTP verified successfully");
-        router.replace("/(screens)/MainDashboard");
+        router.replace("/(screens)/MainScreen");
       } else {
         Alert.alert("Error", response?.message || "Invalid OTP");
       }
