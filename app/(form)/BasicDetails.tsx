@@ -85,6 +85,7 @@ interface ValidationErrors {
   channelName?: string;
   channelAddress?: string;
   areaId?: string;
+  areaName?: string;
   registrationNo?: string;
   pan?: string;
   gstin?: string;
@@ -440,7 +441,8 @@ const BasicDetails = () => {
       errors.channelName = "Channel name is required";
     if (!locationData.address.trim())
       errors.channelAddress = "Channel address is required";
-    if (!formData.areaId) errors.areaId = "Area selection is required";
+    // if (!formData.areaId) errors.areaId = "Area selection is required";
+    if (!formData.areaName) errors.areaName = "Area is required";
     if (!formData.managerName.trim())
       errors.managerName = "Manager name is required";
     if (!formData.managerContact.trim())
@@ -678,7 +680,7 @@ const BasicDetails = () => {
     formDataToSend.append("channelType", formData.channelTypeId);
     formDataToSend.append("channelName", formData.channelName);
     formDataToSend.append("channelAddress", locationData.address);
-    formDataToSend.append("areaId", formData.areaId);
+    formDataToSend.append("areaName", formData.areaName);
     formDataToSend.append("registrationNo", formData.registrationNo);
     formDataToSend.append("pan", formData.pan);
     formDataToSend.append("gstin", formData.gstin);
@@ -728,13 +730,13 @@ const BasicDetails = () => {
           [
             {
               text: "Later",
-              onPress: () => router.push("/(screens)/MainScreen"),
+              onPress: () => router.replace("/(screens)/MainScreen"),
               style: "cancel",
             },
             {
               text: "Add Activity",
               onPress: () =>
-                router.push({
+                router.replace({
                   pathname: "/(form)/ActivityDetails",
                   params: {
                     managerName: formData.managerName,
@@ -854,7 +856,7 @@ const BasicDetails = () => {
             </Text>
           </View>
 
-          <DynamicDropdown
+          {/* <DynamicDropdown
             placeholder="Select Area"
             selectedValue={formData.areaId}
             selectedLabel={formData.areaName}
@@ -868,8 +870,17 @@ const BasicDetails = () => {
             errorMessage="Failed to load areas. Please try again."
             maxHeight={320}
             onDropdownToggle={setIsDropdownOpen}
+          /> */}
+          <TextInput
+            value={formData.areaName}
+            onChangeText={(value) => updateField("areaName", value)}
+            placeholder="Enter Area"
+            placeholderTextColor="grey"
+            className={`border rounded-lg p-3 bg-white ${
+              validationErrors.areaName ? "border-red-500" : "border-gray-300"
+            }`}
           />
-          {renderValidationError("areaId")}
+          {renderValidationError("areaName")}
         </View>
 
         {/* KYC Section */}

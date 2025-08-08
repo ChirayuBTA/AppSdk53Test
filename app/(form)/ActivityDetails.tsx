@@ -25,6 +25,34 @@ import {
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
+interface Area {
+  id: string;
+  name: string;
+  slug: string;
+  cityId: string;
+  pincode: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  status: string;
+  areaType: string | null;
+  createdAt: string;
+  updatedAt: string;
+  city: {
+    id: string;
+    name: string;
+    slug: string;
+    state: string;
+    status: string;
+    pincode: string | null;
+    latitude: string | null;
+    longitude: string | null;
+    createdBy: string;
+    updatedBy: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
 interface UploadedFile {
   id: string;
   name: string;
@@ -83,6 +111,8 @@ const ActivityDetails = () => {
     projectName: "",
     activityTypeId: "",
     activityTypeName: "",
+    areaId: "",
+    areaName: "",
     pocName: "",
     pocContact: "",
     activityDate: getTPlus2Date(),
@@ -162,10 +192,26 @@ const ActivityDetails = () => {
     updateField("projectName", item.name);
   };
 
+  // Area Selection Handler
+  const handleAreaSelect = (item: DropdownItem) => {
+    const area = item as Area;
+    updateField("areaId", item.id);
+    updateField(
+      "areaName",
+      `${item.name}, ${area.city.name}, ${area.city.state}`
+    );
+  };
+
   // Activity Type Selection Handler
   const handleActivityTypeSelect = (item: DropdownItem) => {
     updateField("activityTypeId", item.id);
     updateField("activityTypeName", item.name);
+  };
+
+  // Format area display text for dropdown
+  const formatAreaDisplayText = (item: DropdownItem) => {
+    const area = item as Area;
+    return `${item.name}\n${area.city.name}, ${area.city.state}`;
   };
 
   // API call function for projects with brandId filter
@@ -409,6 +455,7 @@ const ActivityDetails = () => {
     formDataToSend.append("brandId", formData.brandId);
     formDataToSend.append("projectId", formData.projectId);
     formDataToSend.append("activityTypeId", formData.activityTypeId);
+    formDataToSend.append("areaId", formData.areaId);
     formDataToSend.append("activityDate", formData.activityDate.toISOString());
     formDataToSend.append("pocName", formData.pocName);
     formDataToSend.append("pocContact", formData.pocContact);
@@ -445,7 +492,7 @@ const ActivityDetails = () => {
             "Success",
             `Activity details saved successfully! ${uploadedFiles.length} file(s) uploaded.`
           );
-          router.push({
+          router.replace({
             pathname: "/(form)/BankDetails",
             params: {
               channelId: paramChannelId,
@@ -549,6 +596,32 @@ const ActivityDetails = () => {
             noDataMessage="No activity types available"
             errorMessage="Failed to load activity types. Please try again."
           />
+
+          {/* Area Selection Dropdown */}
+          <View className="mb-4">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm font-medium text-gray-700">
+                Area <Text className="text-red-500">*</Text>
+              </Text>
+            </View>
+
+            <DynamicDropdown
+              placeholder="Select Area"
+              selectedValue={formData.areaId}
+              selectedLabel={formData.areaName}
+              onSelect={handleAreaSelect}
+              apiCall={api.getAllAreas}
+              searchable={true}
+              pageSize={10}
+              formatDisplayText={formatAreaDisplayText}
+              searchPlaceholder="Search areas..."
+              noDataMessage="No areas found"
+              errorMessage="Failed to load areas. Please try again."
+              maxHeight={320}
+              // onDropdownToggle={setIsDropdownOpen}
+            />
+            {/* {renderValidationError("areaId")} */}
+          </View>
 
           {/* POC Name */}
           <View className="mb-4">
