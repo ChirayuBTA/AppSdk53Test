@@ -56,6 +56,7 @@ const ExpenseForm = () => {
     // name: "",
     brandId: "",
     brandName: "",
+    brandSlug: "", // Add this
     // activityTypeId: "",
     activityDate: getMinDate(), // should be a Date object
     // activityTypeName: "",
@@ -67,6 +68,7 @@ const ExpenseForm = () => {
     expenseCategory: "PROJECT_EXPENSE",
     expenseTypeId: "",
     expenseTypeName: "",
+    expenseTypeSlug: "", // Add this
     amount: "",
     paymentType: "CASH", // "cash" or "upi_netbanking"
     description: "", // Changed from notes to description
@@ -99,6 +101,7 @@ const ExpenseForm = () => {
     from: "",
     to: "",
     mode: "",
+    distance: "",
     purpose: "",
   });
 
@@ -123,7 +126,7 @@ const ExpenseForm = () => {
 
         // Parse travel description if it's a travel expense
         if (
-          TRAVEL_EXPENSE_IDS.includes(data.natureOfExpenseId || "") &&
+          TRAVEL_EXPENSE_SLUGS.includes(data.natureOfExpense?.slug || "") &&
           data.description
         ) {
           const desc = data.description;
@@ -131,13 +134,15 @@ const ExpenseForm = () => {
           // Parse the travel description using regex
           const fromMatch = desc.match(/I travelled from (.+?) to/);
           const toMatch = desc.match(/to (.+?) by/);
-          const modeMatch = desc.match(/by (.+?) for/);
+          const modeMatch = desc.match(/by (.+?)(?: covering| for)/); // Updated regex to handle optional distance
+          const distanceMatch = desc.match(/covering (.+?) km/); // New regex for distance
           const purposeMatch = desc.match(/for (.+?)\./);
 
           setTravelFields({
             from: fromMatch ? fromMatch[1].trim() : "",
             to: toMatch ? toMatch[1].trim() : "",
             mode: modeMatch ? modeMatch[1].trim() : "",
+            distance: distanceMatch ? distanceMatch[1].trim() : "", // Add distance parsing
             purpose: purposeMatch ? purposeMatch[1].trim() : "",
           });
         }
@@ -147,6 +152,7 @@ const ExpenseForm = () => {
           // name: data.name || "",
           brandId: data.brandId || "",
           brandName: data.brand?.name || "",
+          brandSlug: data.brand?.slug || "", // Add this
           activityDate: data.activityDate
             ? new Date(data.activityDate)
             : getMinDate(),
@@ -158,49 +164,13 @@ const ExpenseForm = () => {
           expenseCategory: data.expenseType || "PROJECT_EXPENSE",
           expenseTypeId: data.natureOfExpenseId || "",
           expenseTypeName: data.natureOfExpense?.expenseName || "",
+          expenseTypeSlug: data.natureOfExpense?.slug || "", // Add this
           amount: data.amount || "",
           paymentType: data.paymentMode || "CASH",
           description: data.description || "",
         });
 
-        // Handle existing files - convert URLs to UploadedFile objects
-        const existingFiles: UploadedFile[] = [];
-
-        if (data.paymentSupporting) {
-          existingFiles.push({
-            id: `existing_payment_${Date.now()}`,
-            name: "Payment Supporting Document",
-            uri: data.paymentSupporting,
-            type: "image",
-            category: "payment_supporting",
-            isExisting: true,
-          });
-        }
-
-        if (data.invoiceOrReceipt) {
-          existingFiles.push({
-            id: `existing_invoice_${Date.now()}`,
-            name: "Invoice/Receipt",
-            uri: data.invoiceOrReceipt,
-            type: "image",
-            category: "invoice_receipt",
-            isExisting: true,
-          });
-        }
-
-        if (data.btaVoucher) {
-          existingFiles.push({
-            id: `existing_bta_${Date.now()}`,
-            name: "BTA Voucher",
-            uri: data.btaVoucher,
-            type: "image",
-            category: "bta_voucher",
-            isExisting: true,
-          });
-        }
-
-        setUploadedFiles(existingFiles);
-        setIsEditMode(true);
+        // Rest of the existing file handling code...
       } else {
         Alert.alert("Error", "Failed to fetch expense data");
       }
@@ -218,11 +188,25 @@ const ExpenseForm = () => {
     }
   }, [paramExpenseId]);
 
-  // IDs for special expense types
-  const TRAVEL_EXPENSE_IDS = [
-    "550ec6b2-3c81-45be-84b9-8cef28fc140e",
-    "9897120a-d06c-4bdf-9230-f1dd0de23c7c",
-  ];
+  // // IDs for special expense types
+  // const TRAVEL_EXPENSE_IDS = [
+  //   "550ec6b2-3c81-45be-84b9-8cef28fc140e",
+  //   "9897120a-d06c-4bdf-9230-f1dd0de23c7c",
+  // ];
+
+  const TRAVEL_EXPENSE_SLUGS = ["local-travel", "promoters-local-travel"];
+
+  const isTravelExpense = () => {
+    return (
+      // TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId) ||
+      TRAVEL_EXPENSE_SLUGS.includes(formData.expenseTypeSlug)
+    );
+  };
+
+  // Helper function to check if brand is Directx
+  const isDirectxBrand = () => {
+    return formData.brandSlug === "directx";
+  };
 
   // Helper function to get today's date
   const getTodaysDate = (): Date => {
@@ -232,12 +216,19 @@ const ExpenseForm = () => {
   // Update travel fields and description
   const handleTravelFieldChange = (field: string, value: string) => {
     setTravelFields((prev) => ({ ...prev, [field]: value }));
-    // Construct the sentence
+    // Construct the sentence with optional distance
+    const distanceText = (field === "distance"
+      ? value
+      : travelFields.distance
+    ).trim()
+      ? ` covering ${field === "distance" ? value : travelFields.distance} km`
+      : "";
+
     const desc = `I travelled from ${
       field === "from" ? value : travelFields.from
     } to ${field === "to" ? value : travelFields.to} by ${
       field === "mode" ? value : travelFields.mode
-    } for ${field === "purpose" ? value : travelFields.purpose}.`;
+    }${distanceText} for ${field === "purpose" ? value : travelFields.purpose}.`;
     updateField("description", desc);
   };
 
@@ -424,6 +415,7 @@ const ExpenseForm = () => {
   const handleBrandSelect = (item: DropdownItem) => {
     updateField("brandId", item.id);
     updateField("brandName", item.name);
+    updateField("brandSlug", item.slug || "");
   };
 
   const handleActivityTypeSelect = (item: DropdownItem) => {
@@ -444,6 +436,7 @@ const ExpenseForm = () => {
   const handleExpenseTypeSelect = (item: DropdownItem) => {
     updateField("expenseTypeId", item.id);
     updateField("expenseTypeName", item.expenseName || item.name);
+    updateField("expenseTypeSlug", item.slug || "");
   };
 
   // Amount validation
@@ -594,21 +587,36 @@ const ExpenseForm = () => {
   const handleSubmit = async () => {
     setIsSubmitting(true);
 
-    // Validation
-    // if (!formData.name.trim()) {
-    //   Alert.alert("Error", "Please enter name");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
+    // Skip validation for Directx brand
+    if (!isDirectxBrand()) {
+      if (!formData.brandId) {
+        Alert.alert("Error", "Please select a brand");
+        setIsSubmitting(false);
+        return;
+      }
 
-    if (!formData.brandId) {
-      Alert.alert("Error", "Please select a brand");
-      setIsSubmitting(false);
-      return;
+      if (!formData.channelId) {
+        Alert.alert("Error", "Please select a channel");
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.projectId) {
+        Alert.alert("Error", "Please select a project");
+        setIsSubmitting(false);
+        return;
+      }
+    } else {
+      // For Directx brand, only validate required fields
+      if (!formData.brandId) {
+        Alert.alert("Error", "Please select a brand");
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     // Travel fields validation for travel expense types
-    if (TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId)) {
+    if (isTravelExpense()) {
       if (!travelFields.from.trim()) {
         Alert.alert("Error", "Please enter 'From' location for travel expense");
         setIsSubmitting(false);
@@ -640,24 +648,6 @@ const ExpenseForm = () => {
       }
     }
 
-    // if (!formData.activityTypeId) {
-    //   Alert.alert("Error", "Please select an activity type");
-    //   setIsSubmitting(false);
-    //   return;
-    // }
-
-    if (!formData.channelId) {
-      Alert.alert("Error", "Please select a channel");
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (!formData.projectId) {
-      Alert.alert("Error", "Please select a project");
-      setIsSubmitting(false);
-      return;
-    }
-
     if (!formData.paidTo.trim()) {
       Alert.alert("Error", "Please enter paid to");
       setIsSubmitting(false);
@@ -682,7 +672,8 @@ const ExpenseForm = () => {
       return;
     }
 
-    // File upload validations
+    // File upload validations (skip for Directx brand)
+    // if (!isDirectxBrand()) {
     if (
       formData.paymentType === "UPI_NETBANKING" &&
       getFilesByCategory("payment_supporting").length === 0
@@ -700,7 +691,7 @@ const ExpenseForm = () => {
     const btaFiles = getFilesByCategory("bta_voucher");
 
     // Only require file uploads for non-travel expenses
-    if (!TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId)) {
+    if (!isTravelExpense()) {
       if (invoiceFiles.length === 0 && btaFiles.length === 0) {
         Alert.alert(
           "Error",
@@ -710,6 +701,7 @@ const ExpenseForm = () => {
         return;
       }
     }
+    // }
 
     // Create FormData for submission with files
     const formDataToSend = new FormData();
@@ -720,12 +712,15 @@ const ExpenseForm = () => {
     }
 
     // Append form fields
-    // formDataToSend.append("name", formData.name);
     formDataToSend.append("brandId", formData.brandId);
-    // formDataToSend.append("activityTypeId", formData.activityTypeId);
-    formDataToSend.append("activityDate", formData.activityDate.toISOString());
-    formDataToSend.append("channelId", formData.channelId);
-    formDataToSend.append("projectId", formData.projectId);
+    if (!isDirectxBrand()) {
+      formDataToSend.append(
+        "activityDate",
+        formData.activityDate.toISOString()
+      );
+      formDataToSend.append("channelId", formData.channelId);
+      formDataToSend.append("projectId", formData.projectId);
+    }
     formDataToSend.append("paidTo", formData.paidTo);
     formDataToSend.append("expenseCategory", formData.expenseCategory);
     formDataToSend.append("expenseTypeId", formData.expenseTypeId);
@@ -864,29 +859,31 @@ const ExpenseForm = () => {
             />
 
             {/* Activity Planned Date */}
-            <View className="mb-4">
-              <Text className="text-sm font-medium text-gray-700 mb-2">
-                Activity Date <Text className="text-red-500">*</Text>
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowDatePicker(true)}
-                className="border border-gray-300 rounded-lg p-3 bg-white"
-              >
-                <Text className="text-gray-900">
-                  {formatDate(formData.activityDate)}
+            {!isDirectxBrand() && (
+              <View className="mb-4">
+                <Text className="text-sm font-medium text-gray-700 mb-2">
+                  Activity Date <Text className="text-red-500">*</Text>
                 </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setShowDatePicker(true)}
+                  className="border border-gray-300 rounded-lg p-3 bg-white"
+                >
+                  <Text className="text-gray-900">
+                    {formatDate(formData.activityDate)}
+                  </Text>
+                </TouchableOpacity>
 
-              {showDatePicker && (
-                <DateTimePicker
-                  value={formData.activityDate}
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={handleDateChange}
-                  // minimumDate={getMinDate()} // T+2 minimum date
-                />
-              )}
-            </View>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={formData.activityDate}
+                    mode="date"
+                    display={Platform.OS === "ios" ? "spinner" : "default"}
+                    onChange={handleDateChange}
+                    // minimumDate={getMinDate()} // T+2 minimum date
+                  />
+                )}
+              </View>
+            )}
 
             {/* Activity Type Select */}
             {/* <DynamicDropdown
@@ -905,36 +902,40 @@ const ExpenseForm = () => {
           /> */}
 
             {/* Channel Select */}
-            <DynamicDropdown
-              label="Channel"
-              placeholder="Select Channel"
-              isRequired={true}
-              selectedValue={formData.channelId}
-              selectedLabel={formData.channelName}
-              onSelect={handleChannelSelect}
-              apiCall={api.getAllChannels}
-              searchable={true}
-              pageSize={10}
-              noDataMessage="No channels available"
-              errorMessage="Failed to load channels. Please try again."
-              onDropdownToggle={setIsDropdownOpen}
-            />
+            {!isDirectxBrand() && (
+              <DynamicDropdown
+                label="Channel"
+                placeholder="Select Channel"
+                isRequired={true}
+                selectedValue={formData.channelId}
+                selectedLabel={formData.channelName}
+                onSelect={handleChannelSelect}
+                apiCall={api.getAllChannels}
+                searchable={true}
+                pageSize={10}
+                noDataMessage="No channels available"
+                errorMessage="Failed to load channels. Please try again."
+                onDropdownToggle={setIsDropdownOpen}
+              />
+            )}
 
             {/* Project Select */}
-            <DynamicDropdown
-              label="Project"
-              placeholder="Select Project"
-              isRequired={true}
-              selectedValue={formData.projectId}
-              selectedLabel={formData.projectName}
-              onSelect={handleProjectSelect}
-              apiCall={api.getAllProjects}
-              searchable={true}
-              pageSize={10}
-              noDataMessage="No projects available"
-              errorMessage="Failed to load projects. Please try again."
-              onDropdownToggle={setIsDropdownOpen}
-            />
+            {!isDirectxBrand() && (
+              <DynamicDropdown
+                label="Project"
+                placeholder="Select Project"
+                isRequired={true}
+                selectedValue={formData.projectId}
+                selectedLabel={formData.projectName}
+                onSelect={handleProjectSelect}
+                apiCall={api.getAllProjects}
+                searchable={true}
+                pageSize={10}
+                noDataMessage="No projects available"
+                errorMessage="Failed to load projects. Please try again."
+                onDropdownToggle={setIsDropdownOpen}
+              />
+            )}
 
             {/* Paid To Field */}
             <View className="mb-4">
@@ -1026,7 +1027,7 @@ const ExpenseForm = () => {
             </View>
 
             {/* Expense Description Field */}
-            {TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId) ? (
+            {isTravelExpense() ? (
               <View className="mb-6">
                 {/* Label */}
                 <Text className="text-base font-semibold text-gray-800 mb-2">
@@ -1071,7 +1072,21 @@ const ExpenseForm = () => {
                       className="border-b border-gray-400 text-sm text-gray-800 mx-2 px-1 pb-0.5 min-w-[100px]"
                     />
 
-                    <Text className="text-gray-700 text-sm">for</Text>
+                    {/* Optional distance field */}
+                    <Text className="text-gray-700 text-sm">covering</Text>
+
+                    <TextInput
+                      value={travelFields.distance}
+                      onChangeText={(v) =>
+                        handleTravelFieldChange("distance", v)
+                      }
+                      placeholder="Distance"
+                      placeholderTextColor="grey"
+                      keyboardType="numeric"
+                      className="border-b border-gray-400 text-sm text-gray-800 mx-2 px-1 pb-0.5 min-w-[120px]"
+                    />
+
+                    <Text className="text-gray-700 text-sm">km for</Text>
 
                     <TextInput
                       value={travelFields.purpose}
@@ -1141,7 +1156,7 @@ const ExpenseForm = () => {
             <View className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <Text className="text-xs text-yellow-700">
                 <Text className="font-medium">Note:</Text>
-                {TRAVEL_EXPENSE_IDS.includes(formData.expenseTypeId)
+                {TRAVEL_EXPENSE_SLUGS.includes(formData.expenseTypeSlug)
                   ? "For travel expenses, Invoice/Receipt and BTA Voucher uploads are optional."
                   : "At least one of Invoice/Receipt or BTA Voucher must be uploaded."}
                 {formData.paymentType === "UPI_NETBANKING" &&

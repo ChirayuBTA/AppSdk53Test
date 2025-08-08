@@ -11,6 +11,7 @@ import {
 interface DropdownItem {
   id: string;
   name: string;
+  slug?: string;
   [key: string]: any; // Allow additional properties for flexibility
 }
 
