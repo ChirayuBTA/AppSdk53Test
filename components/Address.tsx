@@ -361,7 +361,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           <TextInput
             value={value.areaName}
             onChangeText={handleAreaChange}
-            placeholder="Enter Area (e.g., Andheri, Mumbai)"
+            placeholder="Enter Area"
             placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-white"
             style={{ minHeight: 48 }}
