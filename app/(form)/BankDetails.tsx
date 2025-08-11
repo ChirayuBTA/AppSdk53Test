@@ -178,11 +178,14 @@ const BankDetails = () => {
     }
   }, [paramChannelId]);
 
-  const updateField = (field: any, value: any) => {
+  const updateField = (field: string, value: string) => {
     if (!isReadOnly) {
+      // Auto-convert IFSC to uppercase
+      const processedValue = field === "ifscCode" ? value.toUpperCase() : value;
+
       setFormData((prev) => ({
         ...prev,
-        [field]: value,
+        [field]: processedValue,
       }));
     }
   };
@@ -206,6 +209,20 @@ const BankDetails = () => {
       // Reset form to original data
       fetchBankDetails();
     }
+  };
+
+  // IFSC Code Validation Function
+  const validateIFSCCode = (ifscCode: string) => {
+    // IFSC format: AAAA0XXXXXX
+    // First 4 characters: Alphabets (A-Z)
+    // 5th character: Zero (0)
+    // Last 6 characters: Alphanumeric (0-9, A-Z)
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
+
+    return {
+      isValid: ifscRegex.test(ifscCode),
+      message: ifscRegex.test(ifscCode) ? "" : "Invalid IFSC format.",
+    };
   };
 
   const validateForm = () => {
@@ -238,9 +255,10 @@ const BankDetails = () => {
       return false;
     }
 
-    // Basic IFSC validation (should be 11 characters)
-    if (ifscCode.length !== 11) {
-      Alert.alert("Validation Error", "IFSC code should be 11 characters");
+    // Enhanced IFSC validation using regex
+    const ifscValidation = validateIFSCCode(ifscCode.toUpperCase());
+    if (!ifscValidation.isValid) {
+      Alert.alert("Validation Error", ifscValidation.message);
       return false;
     }
 
