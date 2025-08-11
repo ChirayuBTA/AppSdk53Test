@@ -74,17 +74,43 @@ const createDateWithTime = (hours: number, minutes: number = 0): Date => {
   return date;
 };
 
+// Helper function to get which Friday of the month it is (1st, 2nd, 3rd, 4th, or 5th)
+const getFridayOfMonth = (date: Date) => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+
+  // Get the first day of the month
+  const firstDay = new Date(year, month, 1);
+
+  // Find the first Friday of the month
+  let firstFriday = 1;
+  while (new Date(year, month, firstFriday).getDay() !== 5) {
+    firstFriday++;
+  }
+
+  // Calculate which Friday this date is
+  const currentDate = date.getDate();
+  const fridayNumber = Math.floor((currentDate - firstFriday) / 7) + 1;
+
+  return fridayNumber;
+};
+
 // Helper function to get T+2 date (2 days from today), but skip weekends
-const getTPlus2Date = (): Date => {
+const getTPlus2Date = () => {
   const today = new Date();
-  const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const currentDay = today.getDay();
 
   let daysToAdd = 2; // Default T+2
 
-  // If today is Friday (5) or Saturday (6), calculate days to next Tuesday
   if (currentDay === 5) {
     // Friday
-    daysToAdd = 4; // Friday + 4 days = Tuesday
+    const fridayOfMonth = getFridayOfMonth(today);
+
+    if (fridayOfMonth === 2 || fridayOfMonth === 4) {
+      daysToAdd = 2; // T+2 calendar days = Sunday
+    } else {
+      daysToAdd = 4; // T+4 calendar days = Tuesday
+    }
   } else if (currentDay === 6) {
     // Saturday
     daysToAdd = 3; // Saturday + 3 days = Tuesday
