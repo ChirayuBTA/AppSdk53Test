@@ -1,6 +1,13 @@
 import { api } from "@/utils/api";
 import React, { useEffect, useState } from "react";
-import { Alert, Text, TextInput, View } from "react-native";
+import {
+  Alert,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 // You'll need to install this package: npm install indian-pincodes
 // If not available, you can use a pincode API or create a local mapping
@@ -30,6 +37,7 @@ interface LocationData {
   cityName: string;
   pincode: string;
   state: string;
+  areaName: string;
 }
 
 interface LocationSelectorProps {
@@ -53,6 +61,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
 }) => {
   const [isLoadingPincode, setIsLoadingPincode] = useState(false);
   const [allCities, setAllCities] = useState<City[]>([]);
+  const [areaSuggestions, setAreaSuggestions] = useState<any[]>([]);
+  const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   // Add this useEffect to force re-render when needed:
   useEffect(() => {
@@ -227,6 +238,96 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
     <Text className="text-red-500">*</Text>
   ) : null;
 
+  // Add this function to fetch area suggestions using Nominatim (OpenStreetMap) API
+  const fetchAreaSuggestions = async (query: string) => {
+    if (query.trim().length < 3) {
+      setAreaSuggestions([]);
+      setShowAreaSuggestions(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        query
+      )}&limit=5&countrycodes=in&addressdetails=1`;
+
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "chirayu/1.0 (chirayuchawande.work@gmail.com)",
+          "Accept-Language": "en",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedSuggestions = data.map((item: any) => ({
+        id: item.place_id,
+        name: item.name,
+        displayName: item.display_name,
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+      }));
+
+      setAreaSuggestions(formattedSuggestions);
+      setShowAreaSuggestions(formattedSuggestions.length > 0);
+    } catch (error) {
+      console.error("Error fetching area suggestions:", error);
+      setAreaSuggestions([]);
+      setShowAreaSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // Add debounced function
+  const debounceTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  const debouncedFetchAreaSuggestions = React.useCallback((query: string) => {
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+    debounceTimeout.current = setTimeout(() => {
+      fetchAreaSuggestions(query);
+    }, 500);
+  }, []);
+
+  // Add cleanup useEffect
+  React.useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
+
+  // Add area selection handler
+  const handleAreaSuggestionSelect = (suggestion: any) => {
+    const formattedAreaName = `${suggestion.name}`;
+    onChange({
+      ...value,
+      areaName: formattedAreaName,
+    });
+    setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
+  };
+
+  // Handle area name change
+  const handleAreaChange = (areaName: string) => {
+    onChange({
+      ...value,
+      areaName,
+    });
+    debouncedFetchAreaSuggestions(areaName);
+  };
+
   return (
     <View className="">
       {/* Address Field */}
@@ -246,6 +347,63 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           className="border border-gray-300 rounded-lg p-3 bg-white"
           textAlignVertical="top"
         />
+      </View>
+
+      {/* Area Selection with Suggestions */}
+      <View className="mb-4">
+        {showLabels && (
+          <Text className="text-sm font-medium text-gray-700 mb-2">
+            Area {requiredAsterisk}
+          </Text>
+        )}
+
+        <View className="relative">
+          <TextInput
+            value={value.areaName}
+            onChangeText={handleAreaChange}
+            placeholder="Enter Area (e.g., Andheri, Mumbai)"
+            placeholderTextColor="grey"
+            className="border border-gray-300 rounded-lg p-3 bg-white"
+            style={{ minHeight: 48 }}
+            onFocus={() => {
+              if (value.areaName.trim().length >= 3) {
+                setShowAreaSuggestions(true);
+              }
+            }}
+          />
+
+          {isLoadingSuggestions && (
+            <View className="absolute right-3 top-3">
+              <Text className="text-primary text-xs">Loading...</Text>
+            </View>
+          )}
+
+          {/* Area Suggestions Dropdown */}
+          {showAreaSuggestions && areaSuggestions.length > 0 && (
+            <View className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48">
+              <ScrollView nestedScrollEnabled={true}>
+                {areaSuggestions.map((suggestion, index) => (
+                  <TouchableOpacity
+                    key={suggestion.id}
+                    onPress={() => handleAreaSuggestionSelect(suggestion)}
+                    className={`p-3 ${
+                      index < areaSuggestions.length - 1
+                        ? "border-b border-gray-200"
+                        : ""
+                    }`}
+                  >
+                    <Text className="text-gray-900 font-medium text-sm">
+                      {suggestion.name}
+                    </Text>
+                    <Text className="text-gray-600 text-xs mt-1">
+                      {suggestion.displayName}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Pincode Field */}

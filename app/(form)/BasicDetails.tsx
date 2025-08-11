@@ -10,7 +10,7 @@ import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -79,6 +79,7 @@ interface LocationData {
   cityName: string;
   pincode: string;
   state: string;
+  areaName: string;
 }
 
 interface ValidationErrors {
@@ -122,6 +123,7 @@ const BasicDetails = () => {
     cityName: "",
     pincode: "",
     state: "",
+    areaName: "", // Add this line
   });
 
   // Add validation errors state
@@ -445,7 +447,7 @@ const BasicDetails = () => {
     if (!locationData.address.trim())
       errors.channelAddress = "Channel address is required";
     // if (!formData.areaId) errors.areaId = "Area selection is required";
-    if (!formData.areaName) errors.areaName = "Area is required";
+    if (!locationData.areaName) errors.areaName = "Area is required";
     if (!formData.managerName.trim())
       errors.managerName = "Manager name is required";
     if (!formData.managerContact.trim())
@@ -683,7 +685,7 @@ const BasicDetails = () => {
     formDataToSend.append("channelType", formData.channelTypeId);
     formDataToSend.append("channelName", formData.channelName);
     formDataToSend.append("channelAddress", locationData.address);
-    formDataToSend.append("areaName", formData.areaName);
+    formDataToSend.append("areaName", locationData.areaName);
     formDataToSend.append("registrationNo", formData.registrationNo);
     formDataToSend.append("pan", formData.pan);
     formDataToSend.append("gstin", formData.gstin);
@@ -763,85 +765,6 @@ const BasicDetails = () => {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Add this function to fetch area suggestions using Nominatim (OpenStreetMap) API
-  const fetchAreaSuggestions = async (query: string) => {
-    if (query.trim().length < 3) {
-      setAreaSuggestions([]);
-      setShowAreaSuggestions(false);
-      return;
-    }
-
-    setIsLoadingSuggestions(true);
-
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-        query
-      )}&limit=5&countrycodes=in&addressdetails=1`;
-
-      const response = await fetch(url, {
-        headers: {
-          "User-Agent": "chirayu/1.0 (chirayuchawande.work@gmail.com)",
-          "Accept-Language": "en",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      const formattedSuggestions = data.map((item: any) => ({
-        id: item.place_id,
-        name: item.name,
-        displayName: item.display_name,
-        lat: parseFloat(item.lat),
-        lon: parseFloat(item.lon),
-      }));
-
-      setAreaSuggestions(formattedSuggestions);
-      setShowAreaSuggestions(formattedSuggestions.length > 0);
-    } catch (error) {
-      console.error("Error fetching area suggestions:", error);
-      setAreaSuggestions([]);
-      setShowAreaSuggestions(false);
-    } finally {
-      setIsLoadingSuggestions(false);
-    }
-  };
-
-  // Add this after your state declarations
-  const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const debouncedFetchAreaSuggestions = useCallback((query: string) => {
-    // Clear existing timeout
-    if (debounceTimeout.current) {
-      clearTimeout(debounceTimeout.current);
-    }
-
-    // Set new timeout
-    debounceTimeout.current = setTimeout(() => {
-      fetchAreaSuggestions(query);
-    }, 500); // 500ms delay
-  }, []);
-
-  // Clean up timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-    };
-  }, []);
-
-  // Add this function to handle area selection from suggestions
-  const handleAreaSuggestionSelect = (suggestion: any) => {
-    const formattedAreaName = `${suggestion.name}`;
-    updateField("areaName", formattedAreaName);
-    setShowAreaSuggestions(false);
-    setAreaSuggestions([]);
   };
 
   return (
@@ -935,87 +858,6 @@ const BasicDetails = () => {
 
           {/* Location Photo Upload Section */}
           {renderLocationPhotoUpload()}
-
-          {/* Area Selection with Suggestions */}
-          <View className="mb-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm font-medium text-gray-700">
-                Area <Text className="text-red-500">*</Text>
-              </Text>
-            </View>
-
-            {/* <DynamicDropdown
-            placeholder="Select Area"
-            selectedValue={formData.areaId}
-            selectedLabel={formData.areaName}
-            onSelect={handleAreaSelect}
-            apiCall={api.getAllAreas}
-            searchable={true}
-            pageSize={10}
-            formatDisplayText={formatAreaDisplayText}
-            searchPlaceholder="Search areas..."
-            noDataMessage="No areas found"
-            errorMessage="Failed to load areas. Please try again."
-            maxHeight={320}
-            onDropdownToggle={setIsDropdownOpen}
-          /> */}
-
-            <View className="relative">
-              <TextInput
-                value={formData.areaName}
-                onChangeText={(value) => {
-                  updateField("areaName", value);
-                  debouncedFetchAreaSuggestions(value);
-                }}
-                placeholder="Enter Area (e.g., Andheri, Mumbai)"
-                placeholderTextColor="grey"
-                className={`border rounded-lg p-3 bg-white ${
-                  validationErrors.areaName
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-                onFocus={() => {
-                  if (formData.areaName.trim().length >= 3) {
-                    setShowAreaSuggestions(true);
-                  }
-                }}
-              />
-
-              {isLoadingSuggestions && (
-                <View className="absolute right-3 top-3">
-                  <ActivityIndicator size="small" color="#f89f22" />
-                </View>
-              )}
-
-              {/* Area Suggestions Dropdown */}
-              {showAreaSuggestions && areaSuggestions.length > 0 && (
-                <View className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48">
-                  <ScrollView nestedScrollEnabled={true}>
-                    {areaSuggestions.map((suggestion, index) => (
-                      <TouchableOpacity
-                        key={suggestion.id}
-                        onPress={() => handleAreaSuggestionSelect(suggestion)}
-                        className={`p-3 ${
-                          index < areaSuggestions.length - 1
-                            ? "border-b border-gray-200"
-                            : ""
-                        }`}
-                      >
-                        <Text className="text-gray-900 font-medium text-sm">
-                          {suggestion.name}
-                        </Text>
-                        <Text className="text-gray-600 text-xs mt-1">
-                          {suggestion.displayName}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {renderValidationError("areaName")}
-          </View>
 
           {/* KYC Section */}
           <View className="mb-6">
