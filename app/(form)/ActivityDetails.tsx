@@ -150,6 +150,8 @@ const ActivityDetails = () => {
     taxAmount: 0,
     totalAmount: 0,
   });
+  // Add this state to manage which dropdown is open
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [showFileOptions, setShowFileOptions] = useState(false);
@@ -200,6 +202,15 @@ const ActivityDetails = () => {
       ...prev,
       [field]: value,
     }));
+  };
+
+  // Update the dropdown toggle handler
+  const handleDropdownToggle = (dropdownId: string, isOpen: boolean) => {
+    if (isOpen) {
+      setOpenDropdown(dropdownId);
+    } else if (openDropdown === dropdownId) {
+      setOpenDropdown(null);
+    }
   };
 
   // Brand Selection Handler
@@ -587,11 +598,13 @@ const ActivityDetails = () => {
             pageSize={10}
             noDataMessage="No brands available"
             errorMessage="Failed to load brands. Please try again."
+            onDropdownToggle={(isOpen) => handleDropdownToggle("brand", isOpen)}
+            forceClose={openDropdown !== null && openDropdown !== "brand"}
           />
 
           {/* Project Name Dropdown */}
           <DynamicDropdown
-            key={`project-${formData.brandId}`} // Force re-render when brand changes
+            key={`project-${formData.brandId}`}
             label="Project Name"
             placeholder={
               formData.brandId ? "Select Project" : "Select Brand first"
@@ -606,6 +619,10 @@ const ActivityDetails = () => {
             disabled={!formData.brandId}
             noDataMessage="No projects available for selected brand"
             errorMessage="Failed to load projects. Please try again."
+            onDropdownToggle={(isOpen) =>
+              handleDropdownToggle("project", isOpen)
+            }
+            forceClose={openDropdown !== null && openDropdown !== "project"}
           />
 
           {/* Activity Type Dropdown */}
@@ -621,6 +638,12 @@ const ActivityDetails = () => {
             pageSize={10}
             noDataMessage="No activity types available"
             errorMessage="Failed to load activity types. Please try again."
+            onDropdownToggle={(isOpen) =>
+              handleDropdownToggle("activityType", isOpen)
+            }
+            forceClose={
+              openDropdown !== null && openDropdown !== "activityType"
+            }
           />
 
           {/* Area Selection Dropdown */}
@@ -644,9 +667,11 @@ const ActivityDetails = () => {
               noDataMessage="No areas found"
               errorMessage="Failed to load areas. Please try again."
               maxHeight={320}
-              // onDropdownToggle={setIsDropdownOpen}
+              onDropdownToggle={(isOpen) =>
+                handleDropdownToggle("area", isOpen)
+              }
+              forceClose={openDropdown !== null && openDropdown !== "area"}
             />
-            {/* {renderValidationError("areaId")} */}
           </View>
 
           {/* POC Name */}

@@ -42,6 +42,7 @@ interface DynamicDropdownProps {
   additionalQueryParams?: Record<string, any>;
   debounceDelay?: number;
   onDropdownToggle?: (isOpen: boolean) => void;
+  forceClose?: boolean;
 }
 
 const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
@@ -64,6 +65,7 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
   additionalQueryParams = {},
   debounceDelay = 500,
   onDropdownToggle,
+  forceClose = false,
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [items, setItems] = useState<DropdownItem[]>([]);
@@ -74,6 +76,17 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
   const [totalPages, setTotalPages] = useState(0);
   const [total, setTotal] = useState(0);
   const [error, setError] = useState("");
+
+  // Add useEffect to handle forceClose
+  useEffect(() => {
+    if (forceClose && showDropdown) {
+      setShowDropdown(false);
+      setSearchText("");
+      setPage(1);
+      setError("");
+      onDropdownToggle?.(false);
+    }
+  }, [forceClose]);
 
   // Reset states when dropdown opens
   useEffect(() => {
