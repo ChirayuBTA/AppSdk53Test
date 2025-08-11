@@ -188,7 +188,7 @@ const BasicDetails = () => {
 
       case "pan":
         if (value.trim() !== "" && !PAN_REGEX.test(value.trim())) {
-          return "Invalid PAN format (e.g., ABCDE1234F)";
+          return "Invalid PAN Number";
         }
         return null;
 
