@@ -10,7 +10,7 @@ import Constants from "expo-constants";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -111,6 +111,9 @@ const BasicDetails = () => {
     managerContact: "",
     locationLink: "",
   });
+  const [areaSuggestions, setAreaSuggestions] = useState<any[]>([]);
+  const [showAreaSuggestions, setShowAreaSuggestions] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
 
   // Add location data state
   const [locationData, setLocationData] = useState<LocationData>({
@@ -762,101 +765,186 @@ const BasicDetails = () => {
     }
   };
 
+  // Add this function to fetch area suggestions using Nominatim (OpenStreetMap) API
+  const fetchAreaSuggestions = async (query: string) => {
+    if (query.trim().length < 3) {
+      setAreaSuggestions([]);
+      setShowAreaSuggestions(false);
+      return;
+    }
+
+    setIsLoadingSuggestions(true);
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+        query
+      )}&limit=5&countrycodes=in&addressdetails=1`;
+
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent": "chirayu/1.0 (chirayuchawande.work@gmail.com)",
+          "Accept-Language": "en",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const formattedSuggestions = data.map((item: any) => ({
+        id: item.place_id,
+        name: item.name,
+        displayName: item.display_name,
+        lat: parseFloat(item.lat),
+        lon: parseFloat(item.lon),
+      }));
+
+      setAreaSuggestions(formattedSuggestions);
+      setShowAreaSuggestions(formattedSuggestions.length > 0);
+    } catch (error) {
+      console.error("Error fetching area suggestions:", error);
+      setAreaSuggestions([]);
+      setShowAreaSuggestions(false);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
+  };
+
+  // Add this after your state declarations
+  const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const debouncedFetchAreaSuggestions = useCallback((query: string) => {
+    // Clear existing timeout
+    if (debounceTimeout.current) {
+      clearTimeout(debounceTimeout.current);
+    }
+
+    // Set new timeout
+    debounceTimeout.current = setTimeout(() => {
+      fetchAreaSuggestions(query);
+    }, 500); // 500ms delay
+  }, []);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+    };
+  }, []);
+
+  // Add this function to handle area selection from suggestions
+  const handleAreaSuggestionSelect = (suggestion: any) => {
+    const formattedAreaName = `${suggestion.name}`;
+    updateField("areaName", formattedAreaName);
+    setShowAreaSuggestions(false);
+    setAreaSuggestions([]);
+  };
+
   return (
     <ScreenWrapper headerProps={{ showOnlyLogout: true }} showScroll={true}>
-      {/* <ScrollView className="flex-1 bg-white"> */}
-      <View className="p-6">
-        <Text className="text-2xl font-bold text-primary mb-6">
-          Channel Registration
-        </Text>
-
-        {/* Channel Type Dropdown */}
-        <DynamicDropdown
-          label="Channel Type"
-          placeholder="Select Channel Type"
-          isRequired={true}
-          selectedValue={formData.channelTypeId}
-          selectedLabel={formData.channelTypeName}
-          onSelect={handleChannelTypeSelect}
-          apiCall={api.getAllChannelTypes}
-          searchable={true}
-          pageSize={10}
-          noDataMessage="No channel types available"
-          errorMessage="Failed to load channel types. Please try again."
-          maxHeight={320}
-          onDropdownToggle={setIsDropdownOpen}
-        />
-
-        {/* Channel Name */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Channel Name (Legal Name) <Text className="text-red-500">*</Text>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => {
+          setShowAreaSuggestions(false);
+        }}
+      >
+        {/* <ScrollView className="flex-1 bg-white"> */}
+        <View className="p-6">
+          <Text className="text-2xl font-bold text-primary mb-6">
+            Channel Registration
           </Text>
-          <TextInput
-            value={formData.channelName}
-            onChangeText={(value) => updateField("channelName", value)}
-            placeholder="Enter legal name"
-            placeholderTextColor="grey"
-            className={`border rounded-lg p-3 bg-white ${
-              validationErrors.channelName
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {renderValidationError("channelName")}
-        </View>
 
-        {/* Location Selector Component */}
-        <View className="mb-4">
-          <Text className="text-lg font-medium text-gray-800 mb-3">
-            Location Details
-          </Text>
-          <LocationSelector
-            value={locationData}
-            onChange={handleLocationChange}
+          {/* Channel Type Dropdown */}
+          <DynamicDropdown
+            label="Channel Type"
+            placeholder="Select Channel Type"
             isRequired={true}
-            addressLabel="Channel Address"
-            addressPlaceholder="Enter address where activity will be conducted"
-            showLabels={true}
-            forceUpdate={!isDropdownOpen} // Add this line
+            selectedValue={formData.channelTypeId}
+            selectedLabel={formData.channelTypeName}
+            onSelect={handleChannelTypeSelect}
+            apiCall={api.getAllChannelTypes}
+            searchable={true}
+            pageSize={10}
+            noDataMessage="No channel types available"
+            errorMessage="Failed to load channel types. Please try again."
+            maxHeight={320}
+            onDropdownToggle={setIsDropdownOpen}
           />
-          {renderValidationError("channelAddress")}
-        </View>
 
-        {/* Location Link Field */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Location Link (Optional)
-          </Text>
-          <Text className="text-xs text-gray-600 mb-2">
-            Google Maps link, website URL, or any other location reference
-          </Text>
-          <TextInput
-            value={formData.locationLink}
-            onChangeText={(value) => updateField("locationLink", value)}
-            placeholder="https://maps.google.com/... or any location URL"
-            placeholderTextColor="grey"
-            className={`border rounded-lg p-3 bg-white ${
-              validationErrors.locationLink
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {renderValidationError("locationLink")}
-        </View>
-
-        {/* Location Photo Upload Section */}
-        {renderLocationPhotoUpload()}
-
-        {/* Area Selection Dropdown */}
-        <View className="mb-4">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm font-medium text-gray-700">
-              Area <Text className="text-red-500">*</Text>
+          {/* Channel Name */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Channel Name (Legal Name) <Text className="text-red-500">*</Text>
             </Text>
+            <TextInput
+              value={formData.channelName}
+              onChangeText={(value) => updateField("channelName", value)}
+              placeholder="Enter legal name"
+              placeholderTextColor="grey"
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.channelName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {renderValidationError("channelName")}
           </View>
 
-          {/* <DynamicDropdown
+          {/* Location Selector Component */}
+          <View className="mb-4">
+            <Text className="text-lg font-medium text-gray-800 mb-3">
+              Location Details
+            </Text>
+            <LocationSelector
+              value={locationData}
+              onChange={handleLocationChange}
+              isRequired={true}
+              addressLabel="Channel Address"
+              addressPlaceholder="Enter address where activity will be conducted"
+              showLabels={true}
+              forceUpdate={!isDropdownOpen} // Add this line
+            />
+            {renderValidationError("channelAddress")}
+          </View>
+
+          {/* Location Link Field */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Location Link (Optional)
+            </Text>
+            <Text className="text-xs text-gray-600 mb-2">
+              Google Maps link, website URL, or any other location reference
+            </Text>
+            <TextInput
+              value={formData.locationLink}
+              onChangeText={(value) => updateField("locationLink", value)}
+              placeholder="https://maps.google.com/... or any location URL"
+              placeholderTextColor="grey"
+              className={`border rounded-lg p-3 bg-white ${
+                validationErrors.locationLink
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {renderValidationError("locationLink")}
+          </View>
+
+          {/* Location Photo Upload Section */}
+          {renderLocationPhotoUpload()}
+
+          {/* Area Selection with Suggestions */}
+          <View className="mb-4">
+            <View className="flex-row items-center justify-between">
+              <Text className="text-sm font-medium text-gray-700">
+                Area <Text className="text-red-500">*</Text>
+              </Text>
+            </View>
+
+            {/* <DynamicDropdown
             placeholder="Select Area"
             selectedValue={formData.areaId}
             selectedLabel={formData.areaName}
@@ -871,144 +959,193 @@ const BasicDetails = () => {
             maxHeight={320}
             onDropdownToggle={setIsDropdownOpen}
           /> */}
-          <TextInput
-            value={formData.areaName}
-            onChangeText={(value) => updateField("areaName", value)}
-            placeholder="Enter Area"
-            placeholderTextColor="grey"
-            className={`border rounded-lg p-3 bg-white ${
-              validationErrors.areaName ? "border-red-500" : "border-gray-300"
-            }`}
-          />
-          {renderValidationError("areaName")}
-        </View>
 
-        {/* KYC Section */}
-        <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-3">
-            Channel KYC{" "}
-            <Text className="text-red-500">
-              * (At least one field mandatory)
+            <View className="relative">
+              <TextInput
+                value={formData.areaName}
+                onChangeText={(value) => {
+                  updateField("areaName", value);
+                  debouncedFetchAreaSuggestions(value);
+                }}
+                placeholder="Enter Area (e.g., Andheri, Mumbai)"
+                placeholderTextColor="grey"
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.areaName
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
+                onFocus={() => {
+                  if (formData.areaName.trim().length >= 3) {
+                    setShowAreaSuggestions(true);
+                  }
+                }}
+              />
+
+              {isLoadingSuggestions && (
+                <View className="absolute right-3 top-3">
+                  <ActivityIndicator size="small" color="#f89f22" />
+                </View>
+              )}
+
+              {/* Area Suggestions Dropdown */}
+              {showAreaSuggestions && areaSuggestions.length > 0 && (
+                <View className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48">
+                  <ScrollView nestedScrollEnabled={true}>
+                    {areaSuggestions.map((suggestion, index) => (
+                      <TouchableOpacity
+                        key={suggestion.id}
+                        onPress={() => handleAreaSuggestionSelect(suggestion)}
+                        className={`p-3 ${
+                          index < areaSuggestions.length - 1
+                            ? "border-b border-gray-200"
+                            : ""
+                        }`}
+                      >
+                        <Text className="text-gray-900 font-medium text-sm">
+                          {suggestion.name}
+                        </Text>
+                        <Text className="text-gray-600 text-xs mt-1">
+                          {suggestion.displayName}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            {renderValidationError("areaName")}
+          </View>
+
+          {/* KYC Section */}
+          <View className="mb-6">
+            <Text className="text-sm font-medium text-gray-700 mb-3">
+              Channel KYC{" "}
+              <Text className="text-red-500">
+                * (At least one field mandatory)
+              </Text>
             </Text>
-          </Text>
-          {renderValidationError("kyc")}
+            {renderValidationError("kyc")}
 
-          {/* Registration Number */}
-          <View className="mb-3">
-            <Text className="text-sm text-gray-600 mb-2">
-              Channel Registration No.
+            {/* Registration Number */}
+            <View className="mb-3">
+              <Text className="text-sm text-gray-600 mb-2">
+                Channel Registration No.
+              </Text>
+              <TextInput
+                value={formData.registrationNo}
+                onChangeText={(value) => updateField("registrationNo", value)}
+                placeholder="Enter legal entity registration number"
+                placeholderTextColor="grey"
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.registrationNo
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
+              />
+              {renderValidationError("registrationNo")}
+              {renderKYCFileUpload(
+                "registrationNo",
+                formData.registrationNo,
+                "Registration"
+              )}
+            </View>
+
+            {/* PAN */}
+            <View className="mb-3">
+              <Text className="text-sm text-gray-600 mb-2">Channel PAN</Text>
+              <TextInput
+                value={formData.pan}
+                onChangeText={(value) =>
+                  updateField("pan", value.toUpperCase())
+                }
+                placeholder="Enter PAN number (e.g., ABCDE1234F)"
+                placeholderTextColor="grey"
+                maxLength={10}
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.pan ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {renderValidationError("pan")}
+              {renderKYCFileUpload("pan", formData.pan, "PAN")}
+            </View>
+
+            {/* GSTIN */}
+            <View className="mb-3">
+              <Text className="text-sm text-gray-600 mb-2">Channel GSTIN</Text>
+              <TextInput
+                value={formData.gstin}
+                onChangeText={(value) =>
+                  updateField("gstin", value.toUpperCase())
+                }
+                placeholder="Enter GSTIN number (15 characters)"
+                placeholderTextColor="grey"
+                maxLength={15}
+                className={`border rounded-lg p-3 bg-white ${
+                  validationErrors.gstin ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {renderValidationError("gstin")}
+              {renderKYCFileUpload("gstin", formData.gstin, "GSTIN")}
+            </View>
+          </View>
+
+          {/* Manager Name */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Channel Manager Name <Text className="text-red-500">*</Text>
             </Text>
             <TextInput
-              value={formData.registrationNo}
-              onChangeText={(value) => updateField("registrationNo", value)}
-              placeholder="Enter legal entity registration number"
+              value={formData.managerName}
+              onChangeText={(value) => updateField("managerName", value)}
+              placeholder="Person in charge of decision"
               placeholderTextColor="grey"
               className={`border rounded-lg p-3 bg-white ${
-                validationErrors.registrationNo
+                validationErrors.managerName
                   ? "border-red-500"
                   : "border-gray-300"
               }`}
             />
-            {renderValidationError("registrationNo")}
-            {renderKYCFileUpload(
-              "registrationNo",
-              formData.registrationNo,
-              "Registration"
-            )}
+            {renderValidationError("managerName")}
           </View>
 
-          {/* PAN */}
-          <View className="mb-3">
-            <Text className="text-sm text-gray-600 mb-2">Channel PAN</Text>
+          {/* Manager Contact */}
+          <View className="mb-6">
+            <Text className="text-sm font-medium text-gray-700 mb-2">
+              Channel Manager Contact No <Text className="text-red-500">*</Text>
+            </Text>
             <TextInput
-              value={formData.pan}
-              onChangeText={(value) => updateField("pan", value.toUpperCase())}
-              placeholder="Enter PAN number (e.g., ABCDE1234F)"
+              value={formData.managerContact}
+              onChangeText={(value) => updateField("managerContact", value)}
+              placeholder="Enter 10-digit contact number"
               placeholderTextColor="grey"
+              keyboardType="phone-pad"
               maxLength={10}
               className={`border rounded-lg p-3 bg-white ${
-                validationErrors.pan ? "border-red-500" : "border-gray-300"
+                validationErrors.managerContact
+                  ? "border-red-500"
+                  : "border-gray-300"
               }`}
             />
-            {renderValidationError("pan")}
-            {renderKYCFileUpload("pan", formData.pan, "PAN")}
+            {renderValidationError("managerContact")}
           </View>
 
-          {/* GSTIN */}
-          <View className="mb-3">
-            <Text className="text-sm text-gray-600 mb-2">Channel GSTIN</Text>
-            <TextInput
-              value={formData.gstin}
-              onChangeText={(value) =>
-                updateField("gstin", value.toUpperCase())
-              }
-              placeholder="Enter GSTIN number (15 characters)"
-              placeholderTextColor="grey"
-              maxLength={15}
-              className={`border rounded-lg p-3 bg-white ${
-                validationErrors.gstin ? "border-red-500" : "border-gray-300"
-              }`}
-            />
-            {renderValidationError("gstin")}
-            {renderKYCFileUpload("gstin", formData.gstin, "GSTIN")}
-          </View>
+          {/* Submit Button */}
+          <TouchableOpacity
+            onPress={handleSubmit}
+            className="bg-primary rounded-lg p-4 items-center"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text className="text-white font-semibold text-lg">
+                Register Channel
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
-
-        {/* Manager Name */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Channel Manager Name <Text className="text-red-500">*</Text>
-          </Text>
-          <TextInput
-            value={formData.managerName}
-            onChangeText={(value) => updateField("managerName", value)}
-            placeholder="Person in charge of decision"
-            placeholderTextColor="grey"
-            className={`border rounded-lg p-3 bg-white ${
-              validationErrors.managerName
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {renderValidationError("managerName")}
-        </View>
-
-        {/* Manager Contact */}
-        <View className="mb-6">
-          <Text className="text-sm font-medium text-gray-700 mb-2">
-            Channel Manager Contact No <Text className="text-red-500">*</Text>
-          </Text>
-          <TextInput
-            value={formData.managerContact}
-            onChangeText={(value) => updateField("managerContact", value)}
-            placeholder="Enter 10-digit contact number"
-            placeholderTextColor="grey"
-            keyboardType="phone-pad"
-            maxLength={10}
-            className={`border rounded-lg p-3 bg-white ${
-              validationErrors.managerContact
-                ? "border-red-500"
-                : "border-gray-300"
-            }`}
-          />
-          {renderValidationError("managerContact")}
-        </View>
-
-        {/* Submit Button */}
-        <TouchableOpacity
-          onPress={handleSubmit}
-          className="bg-primary rounded-lg p-4 items-center"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text className="text-white font-semibold text-lg">
-              Register Channel
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
       {/* </ScrollView> */}
     </ScreenWrapper>
   );
