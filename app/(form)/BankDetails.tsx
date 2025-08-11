@@ -950,6 +950,35 @@ const BankDetails = () => {
                   </Text>
                 </View>
               </TouchableOpacity>
+
+              {/* Privacy Policy & Terms Links */}
+              <View className="mb-6 flex-row justify-center space-x-4 gap-2">
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: "/legals/PrivacyAndPolicyScreen",
+                      params: { role: "ALLIANCE_MANAGER" },
+                    })
+                  }
+                >
+                  <Text className="text-blue-500 underline text-sm">
+                    Privacy Policy
+                  </Text>
+                </TouchableOpacity>
+                <Text className="text-gray-500 text-sm">|</Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: "/legals/TermsScreen",
+                      params: { role: "ALLIANCE_MANAGER" },
+                    })
+                  }
+                >
+                  <Text className="text-blue-500 underline text-sm">
+                    Terms and Conditions
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Modal Action Buttons */}

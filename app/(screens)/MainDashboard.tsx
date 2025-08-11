@@ -1333,32 +1333,65 @@ const MainDashboard = () => {
             </View>
 
             {!otpMode && (
-              //  Signoff Declaration
-              <View className="mb-6">
-                <TouchableOpacity
-                  onPress={() => setIsDeclarationChecked(!isDeclarationChecked)}
-                  className="flex-row items-start"
-                >
-                  <View
-                    className={`w-5 h-5 border-2 rounded mr-3 mt-1 items-center justify-center ${
-                      isDeclarationChecked
-                        ? "bg-blue-500 border-blue-500"
-                        : "border-gray-300 bg-white"
-                    }`}
+              <>
+                {/* Signoff Declaration */}
+                <View className="mb-4">
+                  <TouchableOpacity
+                    onPress={() =>
+                      setIsDeclarationChecked(!isDeclarationChecked)
+                    }
+                    className="flex-row items-start"
                   >
-                    {isDeclarationChecked && (
-                      <Text className="text-white text-xs font-bold">✓</Text>
-                    )}
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-sm text-gray-700 leading-5">
-                      I hereby declare that the activity and bank details
-                      provided above have been verified and are factually
-                      correct.
+                    <View
+                      className={`w-5 h-5 border-2 rounded mr-3 mt-1 items-center justify-center ${
+                        isDeclarationChecked
+                          ? "bg-blue-500 border-blue-500"
+                          : "border-gray-300 bg-white"
+                      }`}
+                    >
+                      {isDeclarationChecked && (
+                        <Text className="text-white text-xs font-bold">✓</Text>
+                      )}
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-sm text-gray-700 leading-5">
+                        I hereby declare that the activity and bank details
+                        provided above have been verified and are factually
+                        correct.
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Privacy Policy & Terms Links */}
+                <View className="mb-6 flex-row justify-center space-x-4 gap-2">
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/legals/PrivacyAndPolicyScreen",
+                        params: { role: "ALLIANCE_MANAGER" },
+                      })
+                    }
+                  >
+                    <Text className="text-blue-500 underline text-sm">
+                      Privacy Policy
                     </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
+                  </TouchableOpacity>
+                  <Text className="text-gray-500 text-sm">|</Text>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/legals/TermsScreen",
+                        params: { role: "ALLIANCE_MANAGER" },
+                      })
+                    }
+                  >
+                    <Text className="text-blue-500 underline text-sm">
+                      Terms and Conditions
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
 
             {/* Modal Action Buttons */}

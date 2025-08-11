@@ -1,20 +1,15 @@
-import React from "react";
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StatusBar,
-  SafeAreaView,
-  Platform,
-} from "react-native";
-import { WebView } from "react-native-webview";
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import CustomHeader from "@/components/CustomHeader";
 import Constants from "expo-constants";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React from "react";
+import { Platform, SafeAreaView, StatusBar, View } from "react-native";
+import { WebView } from "react-native-webview";
 
 const TermsScreen = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
+
+  const role = params.role as string;
 
   const statusBarHeight =
     Platform.OS === "ios"
@@ -30,13 +25,13 @@ const TermsScreen = () => {
 
       <CustomHeader isLegalScreen={true} />
       <View style={{ flex: 1 }}>
-        {/* <View className="flex-row items-center px-4 py-3 bg-white shadow">
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text className="ml-4 text-lg font-semibold">Terms of Service</Text>
-        </View> */}
-        <WebView source={{ uri: "https://cynq.in/terms-and-conditions" }} />
+        {role === "ALLIANCE_MANAGER" ? (
+          <WebView
+            source={{ uri: "https://cynq.in/co/terms-and-conditions" }}
+          />
+        ) : (
+          <WebView source={{ uri: "https://cynq.in/terms-and-conditions" }} />
+        )}
       </View>
     </SafeAreaView>
   );
