@@ -3,60 +3,67 @@ import { clearAuthData, clearLocData } from "@/utils/storage";
 import { router } from "expo-router";
 import { Alert, Linking } from "react-native";
 
+async function logoutAndRedirect() {
+  await clearAuthData();
+  await clearLocData();
+  router.replace("/"); // Redirect to login page
+}
+
 export async function handleResponse(response: Response) {
-  return response.text().then(async (text) => {
-    const data = text && JSON.parse(text);
+  const text = await response.text();
+  const data = text ? JSON.parse(text) : null;
+  const message = data?.message;
 
-    if (data?.message === "Unauthorized: Invalid token") {
-      await clearAuthData();
-      await clearLocData();
-      router.replace("/"); // Redirect to login page
-      // Alert.alert("Error", "You have been logged out.");
-      return Promise.reject(new Error("You have logged in on another device"));
-    }
+  // Handle token/session invalid cases
+  if (message === "Unauthorized: Invalid token") {
+    await logoutAndRedirect();
+    return Promise.reject(new Error("You have logged in on another device"));
+  }
 
-    if (data?.message === "Unauthorized: Invalid session") {
-      await clearAuthData();
-      await clearLocData();
-      router.replace("/"); // Redirect to login page
-      // Alert.alert("Error", "You have been logged out.");
-      return Promise.reject(new Error("Your sessions has expired"));
-    }
+  if (message === "Unauthorized: Invalid session") {
+    await logoutAndRedirect();
+    return Promise.reject(new Error("Your session has expired"));
+  }
 
-    if (data?.message === "Please update your app to continue") {
-      await clearAuthData();
-      await clearLocData();
+  // Handle app update required
+  if (
+    typeof message === "string" &&
+    message.startsWith("Please update your app to version")
+  ) {
+    await logoutAndRedirect();
 
-      setTimeout(() => {
-        Alert.alert(
-          "App Update Required",
-          "A newer version of the app is available. Please update the app to continue.",
-          [
-            {
-              text: "Update Now",
-              onPress: () => {
-                Linking.openURL(
-                  "https://play.google.com/store/apps/details?id=com.brandtouchindia.cynqorg"
-                );
-              },
+    // Extract version from message
+    const versionMatch = message.match(/version\s+([^\s]+)\s+to continue/i);
+    const latestVersion = versionMatch?.[1];
+
+    setTimeout(() => {
+      Alert.alert(
+        "App Update Required",
+        latestVersion
+          ? `A newer version (${latestVersion}) of the app is available. Please update to continue.`
+          : "A newer version of the app is available. Please update to continue.",
+        [
+          {
+            text: "Update Now",
+            onPress: () => {
+              Linking.openURL(
+                "https://play.google.com/store/apps/details?id=com.brandtouchindia.cynqorg"
+              );
             },
-          ],
-          { cancelable: false }
-        );
-      }, 100);
-      router.replace("/"); // Redirect to login page
-      // Throw specific error instead of generic
-      return Promise.reject(new AppUpdateRequiredError());
-    }
+          },
+        ],
+        { cancelable: false }
+      );
+    }, 100);
 
-    if (!response.ok && data?.success === false) {
-      return data;
-    }
+    return Promise.reject(new AppUpdateRequiredError(latestVersion));
+  }
 
-    if (!response.ok) {
-      return Promise.reject(new Error(data?.message || "Something went wrong"));
-    }
+  // Handle other error cases
+  if (!response.ok) {
+    if (data?.success === false) return data;
+    return Promise.reject(new Error(message || "Something went wrong"));
+  }
 
-    return data;
-  });
+  return data;
 }
