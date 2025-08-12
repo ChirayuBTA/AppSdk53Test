@@ -351,8 +351,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       </View>
       {/* Area Selection with Suggestions */}
       <View className="mb-4" style={{ zIndex: 500 }}>
-        {" "}
-        {/* Reduced from 1000 to 500 */}
         {showLabels && (
           <Text className="text-sm font-medium text-gray-700 mb-2">
             Area {requiredAsterisk}
@@ -382,7 +380,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                 backgroundColor: "white",
                 paddingHorizontal: 4,
                 borderRadius: 4,
-                zIndex: 503, // Reduced from 1003 to 503
+                zIndex: 503,
               }}
             >
               <Text className="text-primary text-xs">Loading...</Text>
@@ -394,9 +392,9 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             <View
               className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48"
               style={{
-                top: 50, // Position just below the input
-                zIndex: 501, // Reduced from 1001 to 501
-                elevation: 8, // Reduced from 1000 to 8
+                top: 50,
+                zIndex: 501,
+                elevation: 8,
                 shadowColor: "#000",
                 shadowOffset: {
                   width: 0,
@@ -446,7 +444,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               left: -1000,
               right: -1000,
               bottom: -1000,
-              zIndex: 499, // Reduced from 999 to 499
+              zIndex: 499,
             }}
             onPress={() => setShowAreaSuggestions(false)}
             activeOpacity={1}
