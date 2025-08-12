@@ -1,5 +1,5 @@
 const constants = {
-  APP_VERSION: "1.0.4",
+  APP_VERSION: "1.0.6",
   APP_NAME: "CYNQ",
   APP_SLUG: "cynq",
   APP_OWNER: "brandtouch",
