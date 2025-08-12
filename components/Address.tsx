@@ -252,6 +252,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
       const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
         query
       )}&limit=5&countrycodes=in&addressdetails=1`;
+      console.log("url---", url);
 
       const response = await fetch(url, {
         headers: {
@@ -348,9 +349,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           textAlignVertical="top"
         />
       </View>
-
       {/* Area Selection with Suggestions */}
-      <View className="mb-4">
+      <View className="mb-4" style={{ zIndex: 1000 }}>
         {showLabels && (
           <Text className="text-sm font-medium text-gray-700 mb-2">
             Area {requiredAsterisk}
@@ -363,8 +363,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             onChangeText={handleAreaChange}
             placeholder="Enter Area"
             placeholderTextColor="grey"
-            className="border border-gray-300 rounded-lg p-3 bg-white"
-            style={{ minHeight: 48 }}
+            className="border border-gray-300 rounded-lg p-3 bg-white pr-16"
+            style={{ minHeight: 48, zIndex: 1002 }}
             onFocus={() => {
               if (value.areaName.trim().length >= 3) {
                 setShowAreaSuggestions(true);
@@ -372,16 +372,44 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             }}
           />
 
+          {/* Loading indicator positioned better */}
           {isLoadingSuggestions && (
-            <View className="absolute right-3 top-3">
+            <View
+              className="absolute right-3 top-1/2"
+              style={{
+                transform: [{ translateY: -6 }],
+                backgroundColor: "white",
+                paddingHorizontal: 4,
+                borderRadius: 4,
+                zIndex: 1003,
+              }}
+            >
               <Text className="text-primary text-xs">Loading...</Text>
             </View>
           )}
 
           {/* Area Suggestions Dropdown */}
           {showAreaSuggestions && areaSuggestions.length > 0 && (
-            <View className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-50 max-h-48">
-              <ScrollView nestedScrollEnabled={true}>
+            <View
+              className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48"
+              style={{
+                top: 50, // Position just below the input
+                zIndex: 1001,
+                elevation: 1000,
+                shadowColor: "#000",
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+              }}
+            >
+              <ScrollView
+                nestedScrollEnabled={true}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
                 {areaSuggestions.map((suggestion, index) => (
                   <TouchableOpacity
                     key={suggestion.id}
@@ -391,11 +419,15 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                         ? "border-b border-gray-200"
                         : ""
                     }`}
+                    style={{ backgroundColor: "white" }}
                   >
                     <Text className="text-gray-900 font-medium text-sm">
                       {suggestion.name}
                     </Text>
-                    <Text className="text-gray-600 text-xs mt-1">
+                    <Text
+                      className="text-gray-600 text-xs mt-1"
+                      numberOfLines={2}
+                    >
                       {suggestion.displayName}
                     </Text>
                   </TouchableOpacity>
@@ -404,8 +436,23 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             </View>
           )}
         </View>
-      </View>
 
+        {/* Touch overlay to close suggestions when tapping outside */}
+        {showAreaSuggestions && (
+          <TouchableOpacity
+            style={{
+              position: "absolute",
+              top: -1000,
+              left: -1000,
+              right: -1000,
+              bottom: -1000,
+              zIndex: 999,
+            }}
+            onPress={() => setShowAreaSuggestions(false)}
+            activeOpacity={1}
+          />
+        )}
+      </View>
       {/* Pincode Field */}
       <View className="mb-4">
         {showLabels && (
@@ -430,7 +477,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
           </Text>
         )}
       </View>
-
       {/* Pincode and State Row */}
       <View className="flex-row gap-2">
         {/* City Input Field */}
