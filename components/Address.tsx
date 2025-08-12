@@ -350,13 +350,14 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
         />
       </View>
       {/* Area Selection with Suggestions */}
-      <View className="mb-4" style={{ zIndex: 1000 }}>
+      <View className="mb-4" style={{ zIndex: 500 }}>
+        {" "}
+        {/* Reduced from 1000 to 500 */}
         {showLabels && (
           <Text className="text-sm font-medium text-gray-700 mb-2">
             Area {requiredAsterisk}
           </Text>
         )}
-
         <View className="relative">
           <TextInput
             value={value.areaName}
@@ -364,7 +365,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             placeholder="Enter Area"
             placeholderTextColor="grey"
             className="border border-gray-300 rounded-lg p-3 bg-white pr-16"
-            style={{ minHeight: 48, zIndex: 1002 }}
+            style={{ minHeight: 48, zIndex: 502 }}
             onFocus={() => {
               if (value.areaName.trim().length >= 3) {
                 setShowAreaSuggestions(true);
@@ -381,7 +382,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
                 backgroundColor: "white",
                 paddingHorizontal: 4,
                 borderRadius: 4,
-                zIndex: 1003,
+                zIndex: 503, // Reduced from 1003 to 503
               }}
             >
               <Text className="text-primary text-xs">Loading...</Text>
@@ -394,8 +395,8 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               className="absolute left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48"
               style={{
                 top: 50, // Position just below the input
-                zIndex: 1001,
-                elevation: 1000,
+                zIndex: 501, // Reduced from 1001 to 501
+                elevation: 8, // Reduced from 1000 to 8
                 shadowColor: "#000",
                 shadowOffset: {
                   width: 0,
@@ -436,7 +437,6 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
             </View>
           )}
         </View>
-
         {/* Touch overlay to close suggestions when tapping outside */}
         {showAreaSuggestions && (
           <TouchableOpacity
@@ -446,7 +446,7 @@ const LocationSelector: React.FC<LocationSelectorProps> = ({
               left: -1000,
               right: -1000,
               bottom: -1000,
-              zIndex: 999,
+              zIndex: 499, // Reduced from 999 to 499
             }}
             onPress={() => setShowAreaSuggestions(false)}
             activeOpacity={1}

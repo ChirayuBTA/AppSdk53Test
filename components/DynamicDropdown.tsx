@@ -232,8 +232,15 @@ const DynamicDropdown: React.FC<DynamicDropdownProps> = ({
             top: "100%",
             left: 0,
             right: 0,
-            zIndex: 1000,
-            elevation: 5, // For Android
+            zIndex: 2000, // Increased from 1000 to 2000
+            elevation: 10, // Increased from 5 to 10 for Android
+            shadowColor: "#000",
+            shadowOffset: {
+              width: 0,
+              height: 4,
+            },
+            shadowOpacity: 0.3,
+            shadowRadius: 5,
           }}
         >
           {/* Search Bar */}
