@@ -93,8 +93,8 @@ const ExpenseForm = () => {
     invoice_receipt: false,
     bta_voucher: false,
   });
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [expenseCategoryChanged, setExpenseCategoryChanged] = useState(false);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Add state for travel description fields
   const [travelFields, setTravelFields] = useState({
@@ -411,11 +411,28 @@ const ExpenseForm = () => {
     }));
   };
 
+  const getProjectsForBrand = async (params: any) => {
+    if (!formData.brandId) {
+      return { success: false, data: [], message: "Brand not selected" };
+    }
+
+    const queryParams = {
+      ...params,
+      brandId: formData.brandId, // Add brandId to query parameters
+    };
+
+    return api.getAllProjects(queryParams);
+  };
+
   // Selection Handlers
   const handleBrandSelect = (item: DropdownItem) => {
     updateField("brandId", item.id);
     updateField("brandName", item.name);
     updateField("brandSlug", item.slug || "");
+
+    // Reset project selection when brand changes
+    updateField("projectId", "");
+    updateField("projectName", "");
   };
 
   const handleActivityTypeSelect = (item: DropdownItem) => {
@@ -437,6 +454,14 @@ const ExpenseForm = () => {
     updateField("expenseTypeId", item.id);
     updateField("expenseTypeName", item.expenseName || item.name);
     updateField("expenseTypeSlug", item.slug || "");
+  };
+
+  const handleDropdownToggle = (dropdownId: string, isOpen: boolean) => {
+    if (isOpen) {
+      setOpenDropdown(dropdownId);
+    } else if (openDropdown === dropdownId) {
+      setOpenDropdown(null);
+    }
   };
 
   // Amount validation
@@ -814,7 +839,7 @@ const ExpenseForm = () => {
   return (
     <ScreenWrapper
       headerProps={{ showOnlyLogout: true }}
-      showScroll={!isDropdownOpen}
+      showScroll={openDropdown === null}
     >
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
@@ -855,8 +880,57 @@ const ExpenseForm = () => {
               pageSize={10}
               noDataMessage="No brands available"
               errorMessage="Failed to load brands. Please try again."
-              onDropdownToggle={setIsDropdownOpen}
+              onDropdownToggle={(isOpen) =>
+                handleDropdownToggle("brand", isOpen)
+              }
+              forceClose={openDropdown !== null && openDropdown !== "brand"}
             />
+
+            {/* Project Select */}
+            {!isDirectxBrand() && (
+              <DynamicDropdown
+                key={`project-${formData.brandId}`}
+                label="Project"
+                placeholder={
+                  formData.brandId ? "Select Project" : "Select Brand first"
+                }
+                isRequired={true}
+                selectedValue={formData.projectId}
+                selectedLabel={formData.projectName}
+                onSelect={handleProjectSelect}
+                apiCall={getProjectsForBrand}
+                searchable={true}
+                pageSize={10}
+                disabled={!formData.brandId}
+                noDataMessage="No projects available for selected brand"
+                errorMessage="Failed to load projects. Please try again."
+                onDropdownToggle={(isOpen) =>
+                  handleDropdownToggle("project", isOpen)
+                }
+                forceClose={openDropdown !== null && openDropdown !== "project"}
+              />
+            )}
+
+            {/* Channel Select */}
+            {!isDirectxBrand() && (
+              <DynamicDropdown
+                label="Channel"
+                placeholder="Select Channel"
+                isRequired={true}
+                selectedValue={formData.channelId}
+                selectedLabel={formData.channelName}
+                onSelect={handleChannelSelect}
+                apiCall={api.getAllChannels}
+                searchable={true}
+                pageSize={10}
+                noDataMessage="No channels available"
+                errorMessage="Failed to load channels. Please try again."
+                onDropdownToggle={(isOpen) =>
+                  handleDropdownToggle("channel", isOpen)
+                }
+                forceClose={openDropdown !== null && openDropdown !== "channel"}
+              />
+            )}
 
             {/* Activity Planned Date */}
             {!isDirectxBrand() && (
@@ -901,42 +975,6 @@ const ExpenseForm = () => {
               onDropdownToggle={setIsDropdownOpen}
           /> */}
 
-            {/* Channel Select */}
-            {!isDirectxBrand() && (
-              <DynamicDropdown
-                label="Channel"
-                placeholder="Select Channel"
-                isRequired={true}
-                selectedValue={formData.channelId}
-                selectedLabel={formData.channelName}
-                onSelect={handleChannelSelect}
-                apiCall={api.getAllChannels}
-                searchable={true}
-                pageSize={10}
-                noDataMessage="No channels available"
-                errorMessage="Failed to load channels. Please try again."
-                onDropdownToggle={setIsDropdownOpen}
-              />
-            )}
-
-            {/* Project Select */}
-            {!isDirectxBrand() && (
-              <DynamicDropdown
-                label="Project"
-                placeholder="Select Project"
-                isRequired={true}
-                selectedValue={formData.projectId}
-                selectedLabel={formData.projectName}
-                onSelect={handleProjectSelect}
-                apiCall={api.getAllProjects}
-                searchable={true}
-                pageSize={10}
-                noDataMessage="No projects available"
-                errorMessage="Failed to load projects. Please try again."
-                onDropdownToggle={setIsDropdownOpen}
-              />
-            )}
-
             {/* Paid To Field */}
             <View className="mb-4">
               <Text className="text-sm font-medium text-gray-700 mb-2">
@@ -960,8 +998,8 @@ const ExpenseForm = () => {
                 selected={formData.expenseCategory === "PROJECT_EXPENSE"}
                 onPress={() => {
                   updateField("expenseCategory", "PROJECT_EXPENSE");
-                  setIsDropdownOpen(false); // Close any open dropdown
-                  setExpenseCategoryChanged(true); // Mark category as changed
+                  setOpenDropdown(null); // Close any open dropdown
+                  setExpenseCategoryChanged(true);
                 }}
                 label="Project Expense"
               />
@@ -969,8 +1007,8 @@ const ExpenseForm = () => {
                 selected={formData.expenseCategory === "GENERAL_EXPENSE"}
                 onPress={() => {
                   updateField("expenseCategory", "GENERAL_EXPENSE");
-                  setIsDropdownOpen(false); // Close any open dropdown
-                  setExpenseCategoryChanged(true); // Mark category as changed
+                  setOpenDropdown(null); // Close any open dropdown
+                  setExpenseCategoryChanged(true);
                 }}
                 label="General Expense"
               />
@@ -1000,7 +1038,12 @@ const ExpenseForm = () => {
               errorMessage="Failed to load expense types. Please try again."
               formatDisplayText={(item) => item.expenseName}
               formatSelectedText={(item) => item.expenseName}
-              onDropdownToggle={setIsDropdownOpen}
+              onDropdownToggle={(isOpen) =>
+                handleDropdownToggle("expenseType", isOpen)
+              }
+              forceClose={
+                openDropdown !== null && openDropdown !== "expenseType"
+              }
             />
 
             {/* Amount Field */}
@@ -1133,12 +1176,18 @@ const ExpenseForm = () => {
               </Text>
               <RadioButton
                 selected={formData.paymentType === "CASH"}
-                onPress={() => updateField("paymentType", "CASH")}
+                onPress={() => {
+                  updateField("paymentType", "CASH");
+                  setOpenDropdown(null); // Close any open dropdown
+                }}
                 label="Cash"
               />
               <RadioButton
                 selected={formData.paymentType === "UPI_NETBANKING"}
-                onPress={() => updateField("paymentType", "UPI_NETBANKING")}
+                onPress={() => {
+                  updateField("paymentType", "UPI_NETBANKING");
+                  setOpenDropdown(null); // Close any open dropdown
+                }}
                 label="UPI/Net Banking"
               />
             </View>
