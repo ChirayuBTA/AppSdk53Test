@@ -901,7 +901,7 @@ const BasicDetails = () => {
                 onChangeText={(value) =>
                   updateField("pan", value.toUpperCase())
                 }
-                placeholder="Enter PAN number (e.g., ABCDE1234F)"
+                placeholder="Enter PAN number"
                 placeholderTextColor="grey"
                 maxLength={10}
                 className={`border rounded-lg p-3 bg-white ${
